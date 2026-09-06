@@ -4,7 +4,7 @@
     {
       "name": "ff14-hub",
       "runtimeExecutable": "powershell",
-      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "ff14-hub/serve.ps1", "-Port", "8124"],
+      "runtimeArgs": ["-ExecutionPolicy", "Bypass", "-File", "serve.ps1", "-Port", "8124"],
       "port": 8124
     }
   ]
