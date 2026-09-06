@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>eorzea.js テスト</title>
+<style>
+  body { background: #14161a; color: #d6dae0; font: 13px/1.6 "Segoe UI", "Meiryo", sans-serif; padding: 16px; }
+  h1 { font-size: 16px; }
+  #summary { font-size: 15px; font-weight: 700; margin: 12px 0; }
+  .pass { color: #5db07a; }
+  .fail { color: #e06c6c; }
+  ul { list-style: none; padding: 0; }
+  li { padding: 2px 0; border-bottom: 1px solid #2e343d; }
+  code { color: #8b929c; }
+</style>
+</head>
+<body>
+<h1>eorzea.js 単体テスト</h1>
+<div id="summary">実行中…</div>
+<ul id="results"></ul>
+
+<script src="js/eorzea.js"></script>
+<script src="js/eorzea.test.js"></script>
+<script>
+(function () {
+  var results = document.querySelector('#results');
+  var passed = 0, failed = 0;
+  function record(ok, msg, detail) {
+    ok ? passed++ : failed++;
+    var li = document.createElement('li');
+    li.className = ok ? 'pass' : 'fail';
+    li.innerHTML = (ok ? '✓ ' : '✗ ') + msg + (detail ? ' <code>' + detail + '</code>' : '');
+    results.appendChild(li);
+  }
+  var t = {
+    ok: function (msg, cond) { record(!!cond, msg, cond ? '' : '期待: truthy'); },
+    eq: function (msg, actual, expected) {
+      var c = Object.is(actual, expected);
+      record(c, msg, c ? '' : '期待 ' + JSON.stringify(expected) + ' / 実際 ' + JSON.stringify(actual));
+    },
+    approx: function (msg, actual, expected, tol) {
+      var c = Math.abs(actual - expected) <= tol;
+      record(c, msg, c ? '' : '期待 ' + expected + '±' + tol + ' / 実際 ' + actual);
+    },
+  };
+  try { window.runEorzeaTests(t); }
+  catch (e) { record(false, 'テスト実行中に例外', String((e && e.stack) || e)); }
+  var summary = document.querySelector('#summary');
+  summary.textContent = passed + ' 件成功 / ' + failed + ' 件失敗';
+  summary.className = failed === 0 ? 'pass' : 'fail';
+})();
+</script>
+</body>
+</html>

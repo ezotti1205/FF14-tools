@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#161b22">
+<title>FF14 ギャザクラ支援ツール</title>
+<!-- ピン留めタブ用のファビコン。data: を先に、実ファイルを後に置いて実ファイルを優先させる -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%230d1117'/%3E%3Cg%20stroke='%230b3a52'%20stroke-width='.6'%20stroke-linejoin='round'%3E%3Cpolygon%20points='16,3.5%2024.5,12%2016,16%207.5,12'%20fill='%237dd3fc'/%3E%3Cpolygon%20points='7.5,12%2016,16%2016,28.5'%20fill='%2338bdf8'/%3E%3Cpolygon%20points='24.5,12%2016,16%2016,28.5'%20fill='%230ea5e9'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/tab-nodes.css">
+<link rel="stylesheet" href="css/tab-assets.css">
+<link rel="stylesheet" href="css/tab-craft.css">
+<link rel="stylesheet" href="css/tab-settings.css">
+</head>
+<body>
+
+<!-- ========== 画面上部に固定のタブバー ========== -->
+<div class="hub-bar">
+  <nav class="hub-tabs" role="tablist" aria-label="ツール">
+    <button type="button" role="tab" data-tab="nodes" aria-selected="false">ノード</button>
+    <button type="button" role="tab" data-tab="assets" aria-selected="false">総資産</button>
+    <button type="button" role="tab" data-tab="craft" aria-selected="false">作る vs 買う</button>
+    <button type="button" role="tab" data-tab="settings" aria-selected="false">設定</button>
+  </nav>
+  <div class="hub-clocks">
+    <div class="hub-clock"><span class="label">ET</span><span id="hubEtClock">--:--</span></div>
+    <div class="hub-clock"><span class="label">現実</span><span id="hubRealClock">--:--:--</span></div>
+  </div>
+</div>
+
+<!-- ========================================================================
+     タブ1: 時間限定ノードのカウントダウン（元 ff14-gather-timer）
+     ======================================================================== -->
+<section id="panel-nodes" class="hub-panel" hidden>
+  <header>
+    <span id="data-info" class="data-info"></span>
+    <span class="data-info">通知・データ更新の設定は「設定」タブにまとめてあります</span>
+  </header>
+
+  <div id="data-banner" class="banner" hidden></div>
+
+  <section class="filters">
+    <select id="filter-job">
+      <option value="ALL">採集/園芸: すべて</option>
+      <option value="MIN">採掘 (MIN)</option>
+      <option value="BTN">園芸 (BTN)</option>
+    </select>
+    <select id="filter-level"><option value="ALL">レベル帯: すべて</option></select>
+    <select id="filter-ptype">
+      <option value="ALL">種別: すべて</option>
+      <option value="刻限">刻限（エフェメラル）</option>
+      <option value="未知">未知</option>
+      <option value="伝説">伝説</option>
+    </select>
+    <input type="search" id="search" placeholder="フリーワード検索（アイテム名・エリア・地点・備考）">
+    <label class="fav-only"><input type="checkbox" id="fav-only"> お気に入りのみ</label>
+    <span id="count" class="count"></span>
+  </section>
+
+  <main id="list"></main>
+
+  <footer><span>1秒ごとに更新 / 設定は localStorage に保存されます</span></footer>
+</section>
+
+<!-- ========================================================================
+     タブ2: 総資産記録帳（元 ff14-assets）
+     ======================================================================== -->
+<section id="panel-assets" class="hub-panel" hidden>
+
+  <header class="app-header">
+    <div class="brand">
+      <h1>FF14 総資産ログ</h1>
+      <p class="tagline">ゲーム終了時点の総資産を、1日1回だけ記録する</p>
+    </div>
+    <div class="current">
+      <span class="current-label">現在の総資産</span>
+      <span class="current-main"><b id="currentAmount">—</b><span class="unit">ギル</span></span>
+      <span class="current-sub" id="currentSub">まだ記録がありません</span>
+    </div>
+  </header>
+
+  <!-- 入力フォーム（タブバーの下に固定） -->
+  <div class="entry-bar">
+    <form id="form" class="entry" autocomplete="off" novalidate>
+      <div class="f f-date">
+        <label for="date">日付 <span class="edit-badge" id="editBadge" hidden>編集中</span></label>
+        <div class="row">
+          <input type="date" id="date" required>
+          <button type="button" class="mini" id="todayBtn">今日</button>
+        </div>
+      </div>
+
+      <div class="f f-amount">
+        <label for="amount">総資産額（ギル）</label>
+        <div class="row">
+          <input type="text" id="amount" inputmode="numeric" enterkeyhint="done"
+                 placeholder="12345678" aria-describedby="formHint">
+          <button type="button" class="mini calc-toggle" id="calcToggle" aria-expanded="false" aria-controls="calcPanel">
+            電卓
+          </button>
+        </div>
+      </div>
+
+      <div class="f f-memo">
+        <label for="memo">メモ（任意）</label>
+        <input type="text" id="memo" maxlength="300" placeholder="零式ドロップ売却 など">
+      </div>
+
+      <div class="f f-btn">
+        <button type="submit" class="btn primary" id="submitBtn">記録する</button>
+        <button type="button" class="btn ghost" id="cancelEdit" hidden>編集をやめる</button>
+      </div>
+
+      <!-- 手持ち・リテイナー・倉庫などバラバラな金額を合算する電卓 -->
+      <div class="calc-panel" id="calcPanel" hidden>
+        <p class="calc-hint">手持ち・リテイナー・倉庫などの内訳を入力すると合計します（1.2億 などの表記もOK）</p>
+        <div class="calc-rows" id="calcRows"></div>
+        <div class="calc-actions">
+          <button type="button" class="mini" id="calcAddRow">＋ 行を追加</button>
+          <button type="button" class="mini ghost" id="calcClear">クリア</button>
+          <span class="calc-total">合計 <b id="calcTotal">0</b> ギル</span>
+          <button type="button" class="btn primary" id="calcCopyBtn">総資産額にコピー</button>
+        </div>
+      </div>
+
+      <p class="form-hint" id="formHint"></p>
+      <p class="form-error" id="formError" hidden></p>
+    </form>
+  </div>
+
+  <main>
+
+    <!-- グラフ -->
+    <section class="card">
+      <div class="card-head">
+        <div class="tabs" id="periodTabs" role="tablist" aria-label="表示期間">
+          <button type="button" role="tab" data-period="week" aria-selected="false">週</button>
+          <button type="button" role="tab" data-period="month" aria-selected="false">月</button>
+          <button type="button" role="tab" data-period="year" aria-selected="false">年</button>
+          <button type="button" role="tab" data-period="all" aria-selected="false">全期間</button>
+        </div>
+        <span class="gran">粒度 <b id="granularity">日次</b></span>
+      </div>
+
+      <div class="stats">
+        <div class="stat main">
+          <span class="stat-label">期間の増減</span>
+          <span class="stat-value" id="statDelta">—</span>
+          <span class="stat-rate" id="statRate">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">記録日数</span>
+          <span class="stat-sm" id="statCount">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">期間内 最高</span>
+          <span class="stat-sm" id="statMax">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">期間内 最低</span>
+          <span class="stat-sm" id="statMin">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">1日あたり</span>
+          <span class="stat-sm" id="statPerDay">—</span>
+        </div>
+      </div>
+
+      <p class="range dim" id="statRange"></p>
+
+      <div class="chart-wrap">
+        <canvas id="chartCanvas"></canvas>
+        <div class="chart-note" id="chartEmpty" hidden>この期間の記録はまだありません</div>
+        <div class="chart-note warn" id="chartFallback" hidden>
+          グラフの描画ライブラリ（Chart.js）を読み込めませんでした。<br>
+          オンラインで再読み込みするか、<code>vendor/chart.umd.js</code> を配置してください。<br>
+          （集計の数値はライブラリなしでも表示されます）
+        </div>
+      </div>
+    </section>
+
+    <!-- 一覧 -->
+    <section class="card">
+      <div class="card-head">
+        <h2>直近の記録</h2>
+        <label class="sel">表示
+          <select id="tableLimit">
+            <option value="30">30件</option>
+            <option value="100">100件</option>
+            <option value="0">全件</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table class="rec">
+          <thead>
+            <tr>
+              <th class="c-date">日付</th>
+              <th class="c-amount">資産額</th>
+              <th class="c-diff">前回比</th>
+              <th class="c-memo">メモ</th>
+              <th class="c-act"></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <p class="empty" id="tableEmpty" hidden>まだ記録がありません。上のフォームから最初の記録を追加してください。</p>
+    </section>
+
+    <!-- データ管理 -->
+    <section class="card">
+      <div class="card-head"><h2>データ管理</h2></div>
+      <div class="actions">
+        <button type="button" class="btn" id="exportBtn">JSONをエクスポート</button>
+        <button type="button" class="btn" id="importBtn">JSONをインポート</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+        <button type="button" class="btn ghost" id="sampleBtn">サンプル365件を生成</button>
+        <button type="button" class="btn ghost danger" id="clearBtn">すべて削除</button>
+      </div>
+      <p class="dim" id="storageInfo"></p>
+      <p class="dim">
+        保存はこのブラウザの localStorage のみです。ブラウザや端末をまたぐときは、
+        エクスポートしたJSONをインポートしてください（記録数 <b id="recordCount">0</b> 件）。
+        3タブぶんまとめての出し入れは「設定」タブにあります。
+      </p>
+    </section>
+
+    <footer class="foot">
+      ゲームクライアントへは一切アクセスしません。入力はすべて手入力です。
+    </footer>
+  </main>
+
+  <!-- モーダル -->
+  <div class="modal-back" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+      <h3 id="modalTitle"></h3>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-buttons" id="modalButtons"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</section>
+
+<!-- ========================================================================
+     タブ3: 「作る vs 買う」判定（元 ff14-craft-profit）
+     ======================================================================== -->
+<section id="panel-craft" class="hub-panel" hidden>
+
+  <header class="top">
+    <div class="brand">FF14<span>製作損益</span></div>
+
+    <div class="search-wrap">
+      <input id="q" type="search" placeholder="アイテム名で検索（日本語 / 英語 / アイテムID）" autocomplete="off" spellcheck="false" disabled>
+      <div id="suggest" class="suggest" hidden></div>
+    </div>
+
+    <div class="top-right">
+      <select id="scope" class="ctl" title="ワールド / データセンター"></select>
+      <button id="reload" class="btn" title="価格をUniversalisから再取得（キャッシュ無視）">再取得</button>
+      <button id="openSettings" class="btn ghost" title="設定タブを開く">設定</button>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <main id="main">
+    <section class="col-main">
+      <div id="targetBar" class="target-bar empty">アイテムを検索して選んでください。</div>
+
+      <div id="treeWrap" class="tree-wrap" hidden>
+        <div class="tree-head">
+          <span class="c-name">素材</span>
+          <span class="c-qty">必要数</span>
+          <span class="c-mode">扱い</span>
+          <span class="c-unit">単価</span>
+          <span class="c-sub">小計</span>
+          <span class="c-upd">更新</span>
+        </div>
+        <div id="tree" class="tree"></div>
+      </div>
+
+      <div id="shopWrap" class="panel" hidden>
+        <div class="panel-h">
+          <span>買い物リスト（同一素材を合算）</span>
+          <button id="copyShop" class="btn tiny ghost">コピー</button>
+        </div>
+        <div id="shop" class="shop"></div>
+      </div>
+    </section>
+
+    <aside class="col-side">
+      <div id="verdict" class="verdict none">
+        <div class="v-label">判定</div>
+        <div class="v-main">—</div>
+        <div class="v-sub">アイテム未選択</div>
+      </div>
+      <div id="summary" class="summary"></div>
+      <div class="note">
+        価格は <a href="https://universalis.app/" target="_blank" rel="noopener">Universalis</a> のユーザー投稿データです。
+        各行の「更新」列がそのアイテムの最終アップロード時刻です。古い場合は実際の相場と乖離します。
+      </div>
+    </aside>
+  </main>
+
+  <div id="cpToast" class="toast" hidden></div>
+</section>
+
+<!-- ========================================================================
+     タブ4: 設定（3本ぶんの設定とデータの出し入れ）
+     ======================================================================== -->
+<section id="panel-settings" class="hub-panel" hidden>
+
+  <div class="set-card">
+    <h2>通知<span class="sub">どのタブからの通知かはタイトルの [ ] で分かります</span></h2>
+
+    <div class="fld check">
+      <label><input type="checkbox" id="setNotifyEnabled"> 通知を有効にする（すべてのタブまとめて）</label>
+      <p class="hint">OFFにすると、ノードの出現通知を含め、このツールからの通知を一切送りません。</p>
+    </div>
+
+    <div class="fld">
+      <label>ブラウザの許可</label>
+      <div class="row-btns">
+        <button type="button" id="enable-notif">ブラウザ通知を有効にする</button>
+      </div>
+      <p class="status" id="notifStatus"></p>
+    </div>
+
+    <div class="fld">
+      <label for="lead-minutes">ノードの出現通知（何分前に知らせるか）</label>
+      <div class="row-btns">
+        <input type="number" id="lead-minutes" min="0" max="60" step="1"> <span class="lbl">分前</span>
+      </div>
+      <p class="hint">通知するノードは「ノード」タブの各行にある「通知」チェックで選びます。
+        <span id="nodeNotifyCount"></span></p>
+    </div>
+  </div>
+
+  <div class="set-card">
+    <h2>作る vs 買う<span class="sub">Universalis の取得条件と判定の基準</span></h2>
+
+    <div class="fld">
+      <label for="setScope">ワールド / データセンター</label>
+      <select id="setScope"></select>
+      <p class="hint">DCを選ぶとDC内の全ワールドの出品をまとめて対象にします。</p>
+    </div>
+
+    <div class="fld">
+      <label for="setFee">マーケット手数料率（%）</label>
+      <input id="setFee" type="number" min="0" max="100" step="0.1" value="5">
+      <p class="hint">既定5%。手取り＝売値×(1−手数料率)。</p>
+    </div>
+
+    <div class="fld">
+      <label for="setBasis">判定に使う完成品の品質</label>
+      <select id="setBasis">
+        <option value="hq">HQ優先（HQ出品が無ければNQ）</option>
+        <option value="nq">NQ</option>
+      </select>
+      <p class="hint">HQ/NQ両方の価格は常に併記されます。素材の購入価格は常にNQ出品で計算します。</p>
+    </div>
+
+    <div class="fld check">
+      <label><input id="setCrystals" type="checkbox" checked> クリスタル類（シャード/クリスタル/クラスター）を既定で「所持済み」扱いにする</label>
+      <p class="hint">個別の行で「買う」に切り替えれば市場価格で原価に算入されます。</p>
+    </div>
+
+    <div class="fld">
+      <label>レシピDB / 価格キャッシュ</label>
+      <div class="row-btns">
+        <button type="button" id="btnRefreshDb">レシピDB更新</button>
+        <button type="button" id="btnClearCache" class="danger">価格キャッシュ削除</button>
+      </div>
+      <p class="hint" id="dbInfo">—</p>
+    </div>
+
+    <div class="fld">
+      <label>アイテムアイコン</label>
+      <div class="row-btns">
+        <button type="button" id="btnClearIcons" class="danger">アイコンキャッシュ削除</button>
+      </div>
+      <p class="hint" id="iconInfo">—</p>
+      <p class="hint">アイコン画像は <a href="https://v2.xivapi.com" target="_blank" rel="noopener">XIVAPI v2</a> から
+        直接読み込んでいます（画像はこのツールに保存せず、アイテムID→アイコンの対応だけを控えています）。
+        取得できなかったアイテムは枠だけの表示になります。</p>
+    </div>
+  </div>
+
+  <div class="set-card">
+    <h2>ノードデータ<span class="sub">出現時刻・座標の一覧</span></h2>
+    <div class="fld">
+      <div class="row-btns">
+        <button type="button" id="update-data" title="exdreams.net の公開データからノード一覧を更新">exdreamsから更新</button>
+        <button type="button" id="reset-data" title="同梱の data/nodes.js に戻す" hidden>同梱に戻す</button>
+      </div>
+      <p class="hint" id="nodesInfo"></p>
+      <p class="hint">取り込んだ一覧は localStorage に保存され、同梱の <code>data/nodes.js</code> より優先されます。</p>
+    </div>
+  </div>
+
+  <div class="set-card">
+    <h2>データの出し入れ<span class="sub">保存先はこのブラウザの localStorage だけです</span></h2>
+
+    <div class="fld">
+      <label>エクスポート</label>
+      <div class="backup-main">
+        <button type="button" class="primary" id="hubExportAll">全部まとめてエクスポート</button>
+        <span class="hint">ノード・総資産・作る vs 買う の3本ぶんを1つのJSONに</span>
+      </div>
+      <div class="row-btns" style="margin-top:8px">
+        <span class="lbl">個別に</span>
+        <button type="button" id="hubExportNodes">ノード</button>
+        <button type="button" id="hubExportAssets">総資産</button>
+        <button type="button" id="hubExportCraft">作る vs 買う</button>
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>インポート</label>
+      <div class="row-btns">
+        <button type="button" id="hubImportBtn">JSONを読み込む</button>
+        <input type="file" id="hubImportFile" accept="application/json,.json" hidden>
+      </div>
+      <p class="hint">まとめてエクスポートしたファイルでも、個別のファイル
+        （統合前の ff14-assets / ff14-craft-profit / ff14-gather-timer のもの）でも、
+        中身を見て自動で振り分けます。総資産の記録は<b>置き換え</b>になるので、
+        追記したい場合は「総資産」タブ側のインポートを使ってください。</p>
+    </div>
+
+    <div class="fld">
+      <p class="hint" id="assetsInfo"></p>
+      <p class="hint">localStorage のキーは
+        <code>ff14-gather-timer/*</code> ／ <code>ff14assets.v1.*</code> ／ <code>ff14cp.*</code> ／
+        <code>ff14hub.v1.*</code> で、互いに衝突しません。</p>
+    </div>
+  </div>
+</section>
+
+<div class="hub-toast" id="hubToast"></div>
+
+<!-- ========================================================================
+     スクリプト
+     読み込み順に意味があります: 共通 → 各タブ → 最後に Tabs.start()
+     ======================================================================== -->
+
+<!-- Chart.js（総資産タブのグラフ）: ローカル vendor → jsDelivr → unpkg の順に試す -->
+<script>
+(function () {
+  var sources = [
+    'vendor/chart.umd.js',
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js',
+    'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js'
+  ];
+  var i = 0;
+  function next() {
+    if (typeof window.Chart !== 'undefined') {
+      document.dispatchEvent(new Event('chartjs-ready'));
+      return;
+    }
+    if (i >= sources.length) {
+      document.dispatchEvent(new Event('chartjs-failed'));
+      return;
+    }
+    var s = document.createElement('script');
+    s.src = sources[i++];
+    s.onload = next;
+    s.onerror = next;
+    document.head.appendChild(s);
+  }
+  next();
+})();
+</script>
+
+<!-- 共通 -->
+<script src="js/core/eorzea.js"></script>
+<script src="js/core/hub.js"></script>
+<script src="js/core/tabs.js"></script>
+<script src="js/core/clock.js"></script>
+<script src="js/core/icons.js"></script>
+<script src="js/core/backup.js"></script>
+
+<!-- タブ1: ノード -->
+<script src="data/nodes.js"></script>
+<script src="js/tabs/nodes/app.js"></script>
+
+<!-- タブ2: 総資産 -->
+<script src="js/tabs/assets/util.js"></script>
+<script src="js/tabs/assets/store.js"></script>
+<script src="js/tabs/assets/agg.js"></script>
+<script src="js/tabs/assets/chart.js"></script>
+<script src="js/tabs/assets/app.js"></script>
+
+<!-- タブ3: 作る vs 買う -->
+<script src="js/tabs/craft/store.js"></script>
+<script src="js/tabs/craft/gamedata.js"></script>
+<script src="js/tabs/craft/universalis.js"></script>
+<script src="js/tabs/craft/calc.js"></script>
+<script src="js/tabs/craft/ui.js"></script>
+<script src="js/tabs/craft/main.js"></script>
+
+<!-- タブ4: 設定 -->
+<script src="js/tabs/settings/settings.js"></script>
+
+<script>
+  FF14.core.Clock.start();
+  FF14.core.Tabs.start();
+</script>
+</body>
+</html>

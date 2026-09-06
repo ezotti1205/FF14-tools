@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#11141b">
+<title>FF14 総資産ログ</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="brand">
+    <h1>FF14 総資産ログ</h1>
+    <p class="tagline">ゲーム終了時点の総資産を、1日1回だけ記録する</p>
+  </div>
+  <div class="current">
+    <span class="current-label">現在の総資産</span>
+    <span class="current-main"><b id="currentAmount">—</b><span class="unit">ギル</span></span>
+    <span class="current-sub" id="currentSub">まだ記録がありません</span>
+  </div>
+</header>
+
+<!-- 入力フォーム（画面上部に固定） -->
+<div class="entry-bar">
+  <form id="form" class="entry" autocomplete="off" novalidate>
+    <div class="f f-date">
+      <label for="date">日付 <span class="edit-badge" id="editBadge" hidden>編集中</span></label>
+      <div class="row">
+        <input type="date" id="date" required>
+        <button type="button" class="mini" id="todayBtn">今日</button>
+      </div>
+    </div>
+
+    <div class="f f-amount">
+      <label for="amount">総資産額（ギル）</label>
+      <div class="row">
+        <input type="text" id="amount" inputmode="numeric" enterkeyhint="done"
+               placeholder="12345678" aria-describedby="formHint">
+        <button type="button" class="mini calc-toggle" id="calcToggle" aria-expanded="false" aria-controls="calcPanel">
+          電卓
+        </button>
+      </div>
+    </div>
+
+    <div class="f f-memo">
+      <label for="memo">メモ（任意）</label>
+      <input type="text" id="memo" maxlength="300" placeholder="零式ドロップ売却 など">
+    </div>
+
+    <div class="f f-btn">
+      <button type="submit" class="btn primary" id="submitBtn">記録する</button>
+      <button type="button" class="btn ghost" id="cancelEdit" hidden>編集をやめる</button>
+    </div>
+
+    <!-- 手持ち・リテイナー・倉庫などバラバラな金額を合算する電卓 -->
+    <div class="calc-panel" id="calcPanel" hidden>
+      <p class="calc-hint">手持ち・リテイナー・倉庫などの内訳を入力すると合計します（1.2億 などの表記もOK）</p>
+      <div class="calc-rows" id="calcRows"></div>
+      <div class="calc-actions">
+        <button type="button" class="mini" id="calcAddRow">＋ 行を追加</button>
+        <button type="button" class="mini ghost" id="calcClear">クリア</button>
+        <span class="calc-total">合計 <b id="calcTotal">0</b> ギル</span>
+        <button type="button" class="btn primary" id="calcCopyBtn">総資産額にコピー</button>
+      </div>
+    </div>
+
+    <p class="form-hint" id="formHint"></p>
+    <p class="form-error" id="formError" hidden></p>
+  </form>
+</div>
+
+<main>
+
+  <!-- グラフ -->
+  <section class="card">
+    <div class="card-head">
+      <div class="tabs" id="periodTabs" role="tablist" aria-label="表示期間">
+        <button type="button" role="tab" data-period="week" aria-selected="false">週</button>
+        <button type="button" role="tab" data-period="month" aria-selected="false">月</button>
+        <button type="button" role="tab" data-period="year" aria-selected="false">年</button>
+        <button type="button" role="tab" data-period="all" aria-selected="false">全期間</button>
+      </div>
+      <span class="gran">粒度 <b id="granularity">日次</b></span>
+    </div>
+
+    <div class="stats">
+      <div class="stat main">
+        <span class="stat-label">期間の増減</span>
+        <span class="stat-value" id="statDelta">—</span>
+        <span class="stat-rate" id="statRate">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">記録日数</span>
+        <span class="stat-sm" id="statCount">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">期間内 最高</span>
+        <span class="stat-sm" id="statMax">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">期間内 最低</span>
+        <span class="stat-sm" id="statMin">—</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">1日あたり</span>
+        <span class="stat-sm" id="statPerDay">—</span>
+      </div>
+    </div>
+
+    <p class="range dim" id="statRange"></p>
+
+    <div class="chart-wrap">
+      <canvas id="chartCanvas"></canvas>
+      <div class="chart-note" id="chartEmpty" hidden>この期間の記録はまだありません</div>
+      <div class="chart-note warn" id="chartFallback" hidden>
+        グラフの描画ライブラリ（Chart.js）を読み込めませんでした。<br>
+        オンラインで再読み込みするか、<code>vendor/chart.umd.js</code> を配置してください。<br>
+        （集計の数値はライブラリなしでも表示されます）
+      </div>
+    </div>
+  </section>
+
+  <!-- 一覧 -->
+  <section class="card">
+    <div class="card-head">
+      <h2>直近の記録</h2>
+      <label class="sel">表示
+        <select id="tableLimit">
+          <option value="30">30件</option>
+          <option value="100">100件</option>
+          <option value="0">全件</option>
+        </select>
+      </label>
+    </div>
+    <div class="table-wrap">
+      <table class="rec">
+        <thead>
+          <tr>
+            <th class="c-date">日付</th>
+            <th class="c-amount">資産額</th>
+            <th class="c-diff">前回比</th>
+            <th class="c-memo">メモ</th>
+            <th class="c-act"></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="tableEmpty" hidden>まだ記録がありません。上のフォームから最初の記録を追加してください。</p>
+  </section>
+
+  <!-- データ管理 -->
+  <section class="card">
+    <div class="card-head"><h2>データ管理</h2></div>
+    <div class="actions">
+      <button type="button" class="btn" id="exportBtn">JSONをエクスポート</button>
+      <button type="button" class="btn" id="importBtn">JSONをインポート</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <button type="button" class="btn ghost" id="sampleBtn">サンプル365件を生成</button>
+      <button type="button" class="btn ghost danger" id="clearBtn">すべて削除</button>
+    </div>
+    <p class="dim" id="storageInfo"></p>
+    <p class="dim">
+      保存はこのブラウザの localStorage のみです。ブラウザや端末をまたぐときは、
+      エクスポートしたJSONをインポートしてください（記録数 <b id="recordCount">0</b> 件）。
+    </p>
+  </section>
+
+  <footer class="foot">
+    ゲームクライアントへは一切アクセスしません。入力はすべて手入力です。
+  </footer>
+</main>
+
+<!-- モーダル -->
+<div class="modal-back" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-box">
+    <h3 id="modalTitle"></h3>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-buttons" id="modalButtons"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Chart.js: ローカル vendor → jsDelivr → unpkg の順に試す -->
+<script>
+(function () {
+  var sources = [
+    'vendor/chart.umd.js',
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js',
+    'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js'
+  ];
+  var i = 0;
+  function next() {
+    if (typeof window.Chart !== 'undefined') {
+      document.dispatchEvent(new Event('chartjs-ready'));
+      return;
+    }
+    if (i >= sources.length) {
+      document.dispatchEvent(new Event('chartjs-failed'));
+      return;
+    }
+    var s = document.createElement('script');
+    s.src = sources[i++];
+    s.onload = next;
+    s.onerror = next;
+    document.head.appendChild(s);
+  }
+  next();
+})();
+</script>
+
+<script src="js/util.js"></script>
+<script src="js/store.js"></script>
+<script src="js/agg.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

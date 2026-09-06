@@ -1,0 +1,121 @@
+/* ===== タブ「設定」 ===== */
+#panel-settings {
+  --set-panel: #161b22;
+  --set-panel-2: #1b212b;
+  --set-line: #262d38;
+  --set-dim: #8b929c;
+  --set-accent: #5b9bd5;
+  --set-danger: #e0736b;
+
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 16px 16px 40px;
+  display: grid;
+  gap: 14px;
+}
+
+#panel-settings [hidden] { display: none !important; }
+
+#panel-settings .set-card {
+  background: var(--set-panel);
+  border: 1px solid var(--set-line);
+  border-radius: 8px;
+  padding: 14px 16px 16px;
+}
+#panel-settings .set-card > h2 {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+#panel-settings .set-card > h2 .sub {
+  margin-left: 8px;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--set-dim);
+}
+
+#panel-settings .fld { margin: 0 0 14px; }
+#panel-settings .fld:last-child { margin-bottom: 0; }
+#panel-settings .fld > label {
+  display: block;
+  font-size: 12px;
+  color: var(--set-dim);
+  letter-spacing: .05em;
+  margin-bottom: 5px;
+}
+#panel-settings .fld.check > label { display: flex; align-items: flex-start; gap: 7px; color: inherit; font-size: 13px; }
+#panel-settings .fld.check input[type="checkbox"] { margin-top: 2px; }
+
+#panel-settings .hint { margin: 5px 0 0; color: var(--set-dim); font-size: 11.5px; }
+#panel-settings .hint code { font-family: ui-monospace, Consolas, monospace; }
+
+#panel-settings select,
+#panel-settings input[type="number"] {
+  background: var(--set-panel-2);
+  color: inherit;
+  border: 1px solid var(--set-line);
+  border-radius: 5px;
+  padding: 6px 8px;
+  font: inherit;
+  min-width: 200px;
+  max-width: 100%;
+}
+#panel-settings select:focus,
+#panel-settings input:focus { outline: none; border-color: var(--set-accent); }
+
+#panel-settings .row-btns { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+#panel-settings .row-btns .lbl { color: var(--set-dim); font-size: 12px; min-width: 92px; }
+
+#panel-settings button,
+#panel-settings .file-btn {
+  background: var(--set-panel-2);
+  color: inherit;
+  border: 1px solid var(--set-line);
+  border-radius: 5px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+#panel-settings button:hover:not(:disabled),
+#panel-settings .file-btn:hover { background: #232c3a; border-color: #39414e; }
+#panel-settings button:disabled { opacity: .5; cursor: default; }
+#panel-settings button.primary { background: #1f4b7a; border-color: #2d6199; }
+#panel-settings button.primary:hover:not(:disabled) { background: #255a91; }
+#panel-settings button.danger { color: var(--set-danger); border-color: #4a2b25; }
+#panel-settings button.danger:hover:not(:disabled) { background: #341f1b; }
+
+#panel-settings .status { margin: 6px 0 0; font-size: 12px; color: var(--set-dim); }
+#panel-settings .status.ok { color: #8fc9a2; }
+
+/* まとめてエクスポートを目立たせる */
+#panel-settings .backup-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  background: var(--set-panel-2);
+  border: 1px solid var(--set-line);
+  border-radius: 6px;
+}
+
+/* 設定タブのトースト（他タブのトーストとは別物） */
+.hub-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(12px);
+  z-index: 200;
+  background: #1b212b;
+  color: #d6dae0;
+  border: 1px solid #262d38;
+  border-radius: 6px;
+  padding: 9px 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s, transform .15s;
+}
+.hub-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.hub-toast.warn { border-color: #5a4a26; color: #e8d5a8; }

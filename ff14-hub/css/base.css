@@ -1,0 +1,117 @@
+/* ===== FF14 ギャザクラ支援ツール 統合版 — 外枠（タブバー / パネル） =====
+   各タブの見た目は css/tab-*.css に、元アプリのCSSを #panel-xxx 配下へ
+   限定した形で入っています（tools/scope-css.awk で生成）。
+   ここには「外枠」と、全タブ共通のリセットだけを置きます。 */
+
+:root {
+  --hub-bg: #0e1116;
+  --hub-bar: #161b22;
+  --hub-line: #262d38;
+  --hub-text: #d6dae0;
+  --hub-dim: #8b929c;
+  --hub-accent: #5b9bd5;
+  --hub-et: #5db07a;
+  --hub-bar-h: 46px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; min-height: 100%; }
+body {
+  background: var(--hub-bg);
+  color: var(--hub-text);
+  font: 13px/1.5 "Segoe UI", "Meiryo", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- タブバー（画面上部に固定） ---------- */
+.hub-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--hub-bar-h);
+  padding: 0 12px;
+  background: var(--hub-bar);
+  border-bottom: 1px solid var(--hub-line);
+}
+.hub-tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+.hub-tabs button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--hub-dim);
+  font: inherit;
+  font-size: 13.5px;
+  padding: 12px 14px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hub-tabs button:hover { color: var(--hub-text); }
+.hub-tabs button[aria-selected="true"] {
+  color: var(--hub-text);
+  border-bottom-color: var(--hub-accent);
+  font-weight: 600;
+}
+.hub-tabs button:focus-visible { outline: 2px solid var(--hub-accent); outline-offset: -2px; }
+
+/* タブバー右端の共通時計（ET / 現実時刻） */
+.hub-clocks { margin-left: auto; display: flex; align-items: baseline; gap: 14px; }
+.hub-clock { display: flex; align-items: baseline; gap: 5px; }
+.hub-clock .label { color: var(--hub-dim); font-size: 11px; letter-spacing: .06em; }
+#hubEtClock {
+  font-size: 20px; font-weight: 700; letter-spacing: 1px;
+  color: var(--hub-et); font-variant-numeric: tabular-nums;
+}
+#hubRealClock { font-size: 13px; color: var(--hub-dim); font-variant-numeric: tabular-nums; }
+
+/* ---------- パネル ----------
+   非表示のタブは display:none。中のタイマー/通知判定はJS側で回り続けます。 */
+.hub-panel { display: block; }
+.hub-panel[hidden] { display: none !important; }
+
+/* 元アプリの sticky ヘッダーは、タブバーの下に重ならないよう位置をずらす */
+#panel-nodes header { top: var(--hub-bar-h); z-index: 5; }
+
+
+@media (max-width: 599px) {
+  :root { --hub-bar-h: 42px; }
+  .hub-bar { gap: 6px; padding: 0 8px; }
+  .hub-tabs button { padding: 10px 9px 8px; font-size: 12.5px; }
+  #hubEtClock { font-size: 17px; }
+  #hubRealClock { display: none; }
+}
+
+/* 元アプリの sticky ヘッダーの追加調整（tab-*.css の top:0 を上書き） */
+#panel-craft .top { top: var(--hub-bar-h); }
+#panel-assets .entry-bar { top: var(--hub-bar-h); }
+#panel-craft .col-side { top: calc(var(--hub-bar-h) + 45px); }
+
+/* ---------- アイテムアイコン（js/core/icons.js） ----------
+   取得の成否にかかわらず同じ大きさの箱を先に置くので、
+   画像が来ても来なくてもレイアウトは動きません。 */
+.ff14-icon {
+  flex: none;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  vertical-align: -6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
+  overflow: hidden;
+}
+.ff14-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+}
+/* 画像が読めなかったときの控えめなプレースホルダ */
+.ff14-icon.is-failed { background: rgba(255, 255, 255, .02); }
+
+.ff14-icon-sm { width: 18px; height: 18px; vertical-align: -4px; border-radius: 3px; }
+.ff14-icon-lg { width: 34px; height: 34px; vertical-align: -9px; border-radius: 5px; }

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="application-name" content="ff14-craft-profit">
+<title>FF14 製作損益計算</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">FF14<span>製作損益</span></div>
+
+  <div class="search-wrap">
+    <input id="q" type="search" placeholder="アイテム名で検索（日本語 / 英語 / アイテムID）" autocomplete="off" spellcheck="false" disabled>
+    <div id="suggest" class="suggest" hidden></div>
+  </div>
+
+  <div class="top-right">
+    <select id="scope" class="ctl" title="ワールド / データセンター"></select>
+    <button id="reload" class="btn" title="価格をUniversalisから再取得（キャッシュ無視）">再取得</button>
+    <button id="openSettings" class="btn ghost" title="設定">設定</button>
+  </div>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<main id="main">
+  <section class="col-main">
+    <div id="targetBar" class="target-bar empty">アイテムを検索して選んでください。</div>
+
+    <div id="treeWrap" class="tree-wrap" hidden>
+      <div class="tree-head">
+        <span class="c-name">素材</span>
+        <span class="c-qty">必要数</span>
+        <span class="c-mode">扱い</span>
+        <span class="c-unit">単価</span>
+        <span class="c-sub">小計</span>
+        <span class="c-upd">更新</span>
+      </div>
+      <div id="tree" class="tree"></div>
+    </div>
+
+    <div id="shopWrap" class="panel" hidden>
+      <div class="panel-h">
+        <span>買い物リスト（同一素材を合算）</span>
+        <button id="copyShop" class="btn tiny ghost">コピー</button>
+      </div>
+      <div id="shop" class="shop"></div>
+    </div>
+  </section>
+
+  <aside class="col-side">
+    <div id="verdict" class="verdict none">
+      <div class="v-label">判定</div>
+      <div class="v-main">—</div>
+      <div class="v-sub">アイテム未選択</div>
+    </div>
+    <div id="summary" class="summary"></div>
+    <div class="note">
+      価格は <a href="https://universalis.app/" target="_blank" rel="noopener">Universalis</a> のユーザー投稿データです。
+      各行の「更新」列がそのアイテムの最終アップロード時刻です。古い場合は実際の相場と乖離します。
+    </div>
+  </aside>
+</main>
+
+<dialog id="settings" class="dlg">
+  <form method="dialog" class="dlg-body">
+    <h2>設定</h2>
+
+    <div class="fld">
+      <label for="setScope">ワールド / データセンター</label>
+      <select id="setScope" class="ctl"></select>
+      <p class="hint">DCを選ぶとDC内の全ワールドの出品をまとめて対象にします。</p>
+    </div>
+
+    <div class="fld">
+      <label for="setFee">マーケット手数料率（%）</label>
+      <input id="setFee" class="ctl" type="number" min="0" max="100" step="0.1" value="5">
+      <p class="hint">既定5%。手取り＝売値×(1−手数料率)。</p>
+    </div>
+
+    <div class="fld">
+      <label for="setBasis">判定に使う完成品の品質</label>
+      <select id="setBasis" class="ctl">
+        <option value="hq">HQ優先（HQ出品が無ければNQ）</option>
+        <option value="nq">NQ</option>
+      </select>
+      <p class="hint">HQ/NQ両方の価格は常に併記されます。素材の購入価格は常にNQ出品で計算します。</p>
+    </div>
+
+    <div class="fld check">
+      <label><input id="setCrystals" type="checkbox" checked> クリスタル類（シャード/クリスタル/クラスター）を既定で「所持済み」扱いにする</label>
+      <p class="hint">個別の行で「買う」に切り替えれば市場価格で原価に算入されます。</p>
+    </div>
+
+    <div class="fld">
+      <label>データ</label>
+      <div class="row-btns">
+        <button id="btnExport" class="btn" type="button">エクスポート</button>
+        <button id="btnImport" class="btn" type="button">インポート</button>
+        <button id="btnRefreshDb" class="btn ghost" type="button">レシピDB更新</button>
+        <button id="btnClearCache" class="btn ghost danger" type="button">価格キャッシュ削除</button>
+      </div>
+      <input id="fileImport" type="file" accept="application/json,.json" hidden>
+      <p class="hint" id="dbInfo">—</p>
+    </div>
+
+    <div class="dlg-foot">
+      <button class="btn primary" value="close">閉じる</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="js/store.js"></script>
+<script src="js/gamedata.js"></script>
+<script src="js/universalis.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
