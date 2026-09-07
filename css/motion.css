@@ -1,0 +1,220 @@
+/* ===== motion.css — 操作したときの視覚フィードバック =====
+
+   方針（重くしないための決めごと）:
+   ・動かすのは transform / opacity / 色 だけ。width・height・top・left は動かさない
+     （レイアウトの再計算が走らないので、リストが長くてもコマ落ちしません）
+   ・登場アニメは先頭12件までに限定する。40件・225件を一斉に動かさない
+   ・「ノード」タブの行には登場アニメを付けない。tick() が1秒ごとに
+     全行を appendChild で並べ替えるため、付けると毎秒225件が再生されてしまう
+     （代わりに、出現中/まもなく の状態が変わったときの色変化だけを滑らかにしている）
+   ・OSの「視差効果を減らす」を有効にしている人には、すべて即時に切り替える
+
+   時間の指定は必ず下のトークンを使うこと。ここを1か所書き換えれば全体が変わります。 */
+
+:root {
+  --mo-fast: 110ms;
+  --mo-base: 170ms;
+  --mo-slow: 260ms;
+  --mo-ease: cubic-bezier(.2, .7, .3, 1);
+  --mo-step: 18ms;          /* リスト登場の1件あたりのずらし幅 */
+}
+
+/* 視差効果を減らす設定のときは、時間をほぼ0にして「結果だけ」出す。
+   すべての指定がトークン経由なので、ここだけで全部止まります。 */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --mo-fast: 1ms;
+    --mo-base: 1ms;
+    --mo-slow: 1ms;
+    --mo-step: 0ms;
+  }
+  .mo-sweep::after,
+  .is-busy .search-wrap::after,
+  .is-busy::after { animation: none; }
+}
+
+/* ---------------------------------------------------------------- keyframes */
+
+@keyframes mo-pop {          /* プルダウン・候補リスト */
+  from { opacity: 0; transform: translateY(-4px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes mo-rise {         /* パネル・カードの登場 */
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes mo-row {          /* 一覧の行（振り幅は小さめ） */
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes mo-sweep {        /* 通信中を示す往復バー */
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(400%); }
+}
+
+@keyframes mo-flash {        /* 値が入れ替わったときの一瞬の強調 */
+  from { background-color: rgba(120, 180, 255, .16); }
+  to   { background-color: transparent; }
+}
+
+/* ---------------------------------------------------------------- タブ切り替え */
+
+/* 表示されたパネルだけに再生される。hidden → 表示 で毎回動く */
+.hub-panel:not([hidden]) {
+  animation: mo-rise var(--mo-base) var(--mo-ease) both;
+}
+
+.hub-tabs button {
+  transition: color var(--mo-fast) var(--mo-ease),
+              background-color var(--mo-fast) var(--mo-ease),
+              border-bottom-color var(--mo-base) var(--mo-ease);
+}
+.hub-tabs button:hover { background-color: rgba(255, 255, 255, .04); }
+.hub-tabs button:active { transform: translateY(1px); }
+
+/* ---------------------------------------------------------------- プルダウン */
+
+/* craft / recipe / watch の候補リストは3つとも .suggest。
+   hidden が外れた瞬間に1回だけ再生されます。 */
+.suggest:not([hidden]) {
+  animation: mo-pop var(--mo-fast) var(--mo-ease) both;
+  transform-origin: top center;
+  will-change: transform, opacity;
+}
+.suggest > * {
+  transition: background-color var(--mo-fast) var(--mo-ease);
+}
+
+/* ネイティブの <select> は開いた中身を装飾できないので、
+   本体の反応だけ滑らかにする */
+.hub-panel select,
+.hub-panel input[type="search"],
+.hub-panel input[type="text"],
+.hub-panel input[type="number"],
+.hub-panel input[type="date"] {
+  transition: border-color var(--mo-fast) var(--mo-ease),
+              background-color var(--mo-fast) var(--mo-ease),
+              box-shadow var(--mo-fast) var(--mo-ease);
+}
+.hub-panel select:active { transform: translateY(1px); }
+
+/* ---------------------------------------------------------------- ボタン */
+
+.hub-panel button,
+.hub-panel .btn,
+.hub-panel .import-btn {
+  transition: background-color var(--mo-fast) var(--mo-ease),
+              border-color var(--mo-fast) var(--mo-ease),
+              color var(--mo-fast) var(--mo-ease),
+              opacity var(--mo-fast) var(--mo-ease),
+              transform var(--mo-fast) var(--mo-ease);
+}
+/* 押した瞬間だけ少し沈ませる。無効なボタンは動かさない */
+.hub-panel button:not(:disabled):active,
+.hub-panel .btn:not(:disabled):active,
+.hub-panel .import-btn:active { transform: scale(.97); }
+
+/* チェックボックス・ラジオ */
+.hub-panel input[type="checkbox"],
+.hub-panel input[type="radio"] {
+  transition: transform var(--mo-fast) var(--mo-ease);
+}
+.hub-panel input[type="checkbox"]:active,
+.hub-panel input[type="radio"]:active { transform: scale(.88); }
+
+/* ---------------------------------------------------------------- 通信中 */
+
+/* 検索や価格取得を待っている間、入力欄の下に細いバーを往復させる。
+   高さは固定で transform だけ動かすので、レイアウトには影響しません。 */
+.is-busy { position: relative; }
+.is-busy::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--hub-accent, #4aa3d8) 45%,
+    var(--hub-accent, #4aa3d8) 55%, transparent 100%);
+  background-size: 25% 100%;
+  background-repeat: no-repeat;
+  animation: mo-sweep 1.1s linear infinite;
+  pointer-events: none;
+}
+
+/* 通信中は入力欄をわずかに沈ませて「待ち」だと分かるようにする */
+.is-busy input[type="search"],
+.is-busy input[type="text"] { opacity: .75; }
+
+/* ---------------------------------------------------------------- 一覧の登場 */
+
+/* 先頭12件だけ順番にずらす。13件目以降は遅延なしで一斉に出る。
+   （40件でも225件でも、同時に走るアニメは最大12件） */
+.mo-list > *:nth-child(-n + 12) {
+  animation: mo-row var(--mo-base) var(--mo-ease) both;
+}
+.mo-list > *:nth-child(1)  { animation-delay: calc(var(--mo-step) * 0); }
+.mo-list > *:nth-child(2)  { animation-delay: calc(var(--mo-step) * 1); }
+.mo-list > *:nth-child(3)  { animation-delay: calc(var(--mo-step) * 2); }
+.mo-list > *:nth-child(4)  { animation-delay: calc(var(--mo-step) * 3); }
+.mo-list > *:nth-child(5)  { animation-delay: calc(var(--mo-step) * 4); }
+.mo-list > *:nth-child(6)  { animation-delay: calc(var(--mo-step) * 5); }
+.mo-list > *:nth-child(7)  { animation-delay: calc(var(--mo-step) * 6); }
+.mo-list > *:nth-child(8)  { animation-delay: calc(var(--mo-step) * 7); }
+.mo-list > *:nth-child(9)  { animation-delay: calc(var(--mo-step) * 8); }
+.mo-list > *:nth-child(10) { animation-delay: calc(var(--mo-step) * 9); }
+.mo-list > *:nth-child(11) { animation-delay: calc(var(--mo-step) * 10); }
+.mo-list > *:nth-child(12) { animation-delay: calc(var(--mo-step) * 11); }
+
+/* 市場タブ: 検索結果と登録リストのカード */
+#panel-watch .card-list > .card:nth-child(-n + 12) {
+  animation: mo-row var(--mo-base) var(--mo-ease) both;
+}
+#panel-watch .card-list > .card { transition: border-color var(--mo-base) var(--mo-ease); }
+
+/* 作る vs 買う: 素材ツリーと買い物リスト */
+#panel-craft .tree > *:nth-child(-n + 12),
+#panel-craft .shop > *:nth-child(-n + 12) {
+  animation: mo-row var(--mo-base) var(--mo-ease) both;
+}
+
+/* 総資産: 記録テーブル */
+#panel-assets .rec tbody tr:nth-child(-n + 12) {
+  animation: mo-row var(--mo-base) var(--mo-ease) both;
+}
+
+/* レシピ: 作り方・条件検索の結果・最近見たもの */
+.rcp-root .make-list > *:nth-child(-n + 12),
+.rcp-root .browse-cards > *:nth-child(-n + 12),
+.rcp-root .recent-list > *:nth-child(-n + 12) {
+  animation: mo-row var(--mo-base) var(--mo-ease) both;
+}
+/* 逆引きの折りたたみは開閉するので、見出しの反応だけ滑らかにする
+   （中の表は多階層に展開されるため、行ごとのアニメは付けない） */
+.rcp-root .rev-head .sortable { transition: color var(--mo-fast) var(--mo-ease); }
+
+/* ---------------------------------------------------------------- ノードタブ */
+
+/* 行の登場アニメは付けない（1秒ごとに全行が並べ替わるため）。
+   状態が変わったときの色だけ滑らかにする。transition は値が変わったときにしか
+   発火しないので、並べ替えでは再生されません。 */
+#panel-nodes .row {
+  transition: background-color var(--mo-slow) var(--mo-ease),
+              border-color var(--mo-slow) var(--mo-ease);
+}
+
+/* ---------------------------------------------------------------- 通知・トースト */
+
+.hub-toast, #hubToast {
+  transition: opacity var(--mo-base) var(--mo-ease),
+              transform var(--mo-base) var(--mo-ease);
+}
+
+/* ---------------------------------------------------------------- 値の更新 */
+
+/* 価格や合計が入れ替わったときに一瞬だけ光らせる。JS から付け外しします。 */
+.mo-flash { animation: mo-flash var(--mo-slow) var(--mo-ease); }

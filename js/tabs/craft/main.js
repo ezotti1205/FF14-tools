@@ -33,6 +33,15 @@
   var lastResult = null;
   var busy = false;
 
+  /* 通信中は検索欄の下にバーを走らせる（css/motion.css の .is-busy）。
+     busy の付け外しと必ず対にすること。 */
+  function setBusy(on) {
+    busy = !!on;
+    el.reload.disabled = !!on;
+    var wrap = document.querySelector('#panel-craft .search-wrap');
+    if (wrap) wrap.classList.toggle('is-busy', !!on);
+  }
+
   // ---------------- フォーカス保持 ----------------
   function captureFocus() {
     var a = document.activeElement;
@@ -114,8 +123,7 @@
     } catch (err) {
       console.error(err); render(); return Promise.resolve();
     }
-    busy = true;
-    el.reload.disabled = true;
+    setBusy(true);
     UI.banner('価格を取得中…', null);
 
     return Universalis.ensurePrices(settings.scopeName, ids, {
@@ -124,8 +132,7 @@
         if (total > 1) UI.banner('価格を取得中… ' + done + '/' + total, null);
       }
     }).then(function (res) {
-      busy = false;
-      el.reload.disabled = false;
+      setBusy(false);
       if (res.failed.length) {
         UI.banner('価格の取得に失敗した素材が ' + res.failed.length + ' 件あります（' +
                   (res.errors[0] || '不明なエラー') + '）。該当行の単価欄に手入力すれば計算を続けられます。',
@@ -136,8 +143,7 @@
       render();
       return res;
     }).catch(function (err) {
-      busy = false;
-      el.reload.disabled = false;
+      setBusy(false);
       console.error(err);
       UI.banner('価格取得で予期しないエラー: ' + (err && err.message) + '。手入力で計算を続けられます。', 'err',
                 '再試行', function () { refresh(true); });

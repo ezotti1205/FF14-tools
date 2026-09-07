@@ -57,6 +57,15 @@
     el.classList.toggle('is-error', !!isErr);
   }
 
+  /* 通信を待っている間、検索欄の下にバーを走らせる（css/motion.css の .is-busy）。
+     検索とfav更新が同時に走ることがあるので、数えて0になったら消す。 */
+  var busyCount = 0;
+  function busy(on) {
+    busyCount = Math.max(0, busyCount + (on ? 1 : -1));
+    var wrap = els.searchForm && els.searchForm.parentNode;
+    if (wrap) wrap.classList.toggle('is-busy', busyCount > 0);
+  }
+
   function opt(v, label) {
     var o = document.createElement('option');
     o.value = v; o.textContent = label || v;
@@ -301,6 +310,7 @@
     if (!q) return;
     closeSuggest();
     setMsg(els.searchMsg, '「' + q + '」を検索中…');
+    busy(true);
     Marketable.load().then(function () {
       return XIVAPI.searchItems(q, settings.lang, true);
     }).then(function (rows) {
@@ -309,7 +319,7 @@
     }).catch(function (err) {
       showResults([], null, 0);
       setMsg(els.searchMsg, 'アイテム検索に失敗しました（' + ((err && err.message) || err) + '）', true);
-    });
+    }).then(function () { busy(false); });
   }
 
   /** 検索結果を差し替えて価格を取りに行く。total は絞り込み後の総ヒット数 */
@@ -340,6 +350,7 @@
         if (total > 1) setMsg(els.searchMsg, '価格を取得中… ' + done + '/' + total);
       }
     };
+    busy(true);
     Universalis.ensurePrices(scope(), ids, opts).then(function (res) {
       lastFetch = Date.now();
       renderResults();
@@ -350,7 +361,7 @@
           ? '（全 ' + lastTotal + ' 件中）' : '';
         setMsg(els.searchMsg, lastResults.length + ' 件' + more + ' ・ ' + scope());
       }
-    });
+    }).then(function () { busy(false); }, function () { busy(false); });
   }
 
   function favIdSet() {

@@ -115,9 +115,19 @@
    * レシピDBを読み込み、逆引きインデックスを組んでから ready を呼ぶ。
    * @param {{ready:function(info), onReload?:function()}} opts
    */
+  /* DBの読み込み中は検索欄の下にバーを走らせる（css/motion.css の .is-busy）。
+     初回は約2MBの取得があり、待ち時間が長いため。 */
+  function setBusy(on) {
+    if (!root) return;
+    root.querySelectorAll('.search-wrap').forEach(function (w) {
+      w.classList.toggle('is-busy', !!on);
+    });
+  }
+
   function boot(opts) {
     opts = opts || {};
     banner('レシピDBを読み込み中…（初回のみ約2MB）');
+    setBusy(true);
     syncStickyTop();
     window.addEventListener('resize', syncStickyTop);
 
@@ -125,6 +135,7 @@
       banner('レシピDBを展開中…');
       Index.build();
       banner(null);
+      setBusy(false);
       renderStatus(info);
       syncStickyTop();
 
@@ -133,16 +144,19 @@
         reload.addEventListener('click', function () {
           if (reload.disabled) return;
           reload.disabled = true;
+          setBusy(true);
           banner('レシピDBを再取得中…');
           GameData.load({ force: true, onProgress: banner }).then(function (i2) {
             Index.build();
             banner(null);
             renderStatus(i2);
             reload.disabled = false;
+            setBusy(false);
             if (opts.onReload) opts.onReload(i2);
           }).catch(function (err) {
             banner('再取得に失敗しました: ' + (err && err.message), 'err');
             reload.disabled = false;
+            setBusy(false);
           });
         });
       }
@@ -154,6 +168,7 @@
       return info;
     }).catch(function (err) {
       console.error(err);
+      setBusy(false);
       banner('レシピDBを取得できませんでした（' + (err && err.message) +
              '）。ネットワークを確認して再読み込みしてください。', 'err');
       throw err;
