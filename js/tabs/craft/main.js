@@ -224,16 +224,59 @@
   }
 
   // ---------------- 対象バー操作 ----------------
+  /* 作る個数は 1〜99。両端でスピナー / ↑↓キー / ホイールを回すと反対側へ循環する
+     （1 で下げると 99、99 で上げると 1）。手入力の途中（"0" など）は確定まで待つ。 */
+  var QTY_MIN = 1, QTY_MAX = 99;
   var qtyTimer = null;
-  el.targetBar.addEventListener('input', function (e) {
-    if (e.target.id !== 'qty') return;
-    var v = parseInt(e.target.value, 10);
-    if (!isFinite(v) || v < 1) return;
+
+  function wrapQty(v) {
+    if (v < QTY_MIN) return QTY_MAX;
+    if (v > QTY_MAX) return QTY_MIN;
+    return v;
+  }
+
+  function setQty(v, reflect) {
+    v = Math.max(QTY_MIN, Math.min(QTY_MAX, v));
     state.qty = v;
+    if (reflect) {
+      var inp = document.getElementById('qty');
+      if (inp && inp.value !== String(v)) inp.value = v;
+    }
     Store.saveStateSoon();
     if (qtyTimer) clearTimeout(qtyTimer);
     qtyTimer = setTimeout(recalcAndTopUp, 250);
+  }
+
+  /* ↑↓キーはネイティブのステップを止めて自前で循環させる（確実） */
+  el.targetBar.addEventListener('keydown', function (e) {
+    if (e.target.id !== 'qty') return;
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    var cur = parseInt(e.target.value, 10);
+    if (!isFinite(cur)) cur = state.qty;
+    setQty(wrapQty(cur + (e.key === 'ArrowUp' ? 1 : -1)), true);
   });
+
+  el.targetBar.addEventListener('input', function (e) {
+    if (e.target.id !== 'qty') return;
+    var raw = e.target.value;
+    if (raw === '') return;                         // 全消し途中は何もしない
+    var v = parseInt(raw, 10);
+    if (!isFinite(v)) return;
+
+    /* スピナー / ホイールでの増減は inputType が空（Chrome は "insertReplacementText"
+       を返すことがある）。文字の挿入・削除は循環させず、確定まで待つ。 */
+    var stepped = (e.inputType == null || e.inputType === '' || e.inputType === 'insertReplacementText');
+
+    if (stepped) {
+      setQty(wrapQty(v), true);
+    } else if (v < QTY_MIN) {
+      return;                                       // 手入力の途中（"0" 等）は確定まで待つ
+    } else {
+      setQty(v, v > QTY_MAX);                       // 上限超過だけ即クランプして書き戻す
+    }
+  });
+
   el.targetBar.addEventListener('change', function (e) {
     if (e.target.id === 'recipeSel') {
       state.recipeChoice[state.itemId] = +e.target.value;
@@ -241,9 +284,11 @@
       recalcAndTopUp();
     } else if (e.target.id === 'qty') {
       var v = parseInt(e.target.value, 10);
-      state.qty = (isFinite(v) && v >= 1) ? v : 1;
-      e.target.value = state.qty;
+      v = Math.max(QTY_MIN, Math.min(QTY_MAX, isFinite(v) ? v : QTY_MIN));
+      state.qty = v;
+      e.target.value = v;
       Store.saveStateSoon();
+      if (qtyTimer) clearTimeout(qtyTimer);
       recalcAndTopUp();
     }
   });
@@ -349,6 +394,8 @@
   function boot() {
     if (booted) return;
     booted = true;
+    /* 旧データに 1〜99 の外の個数が残っていることがあるので直しておく */
+    state.qty = Math.max(QTY_MIN, Math.min(QTY_MAX, state.qty || QTY_MIN));
     UI.banner('レシピDBを読み込み中…', null);
 
     // ワールド一覧（失敗しても致命的ではない）

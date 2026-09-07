@@ -176,7 +176,9 @@ var UI = (function () {
 
     html += '<div class="t-spacer"></div>';
     html += '<div class="t-qty"><label for="qty">作る個数</label>' +
-            '<input id="qty" type="number" min="1" step="1" value="' + result.qty + '"></div>';
+            '<input id="qty" type="number" inputmode="numeric" step="1"' +
+            ' value="' + Math.max(1, Math.min(99, result.qty || 1)) + '"' +
+            ' title="1〜99。両端でスピナー／↑↓キーを回すと反対側へ循環します"></div>';
     html += '<div class="t-meta">製作 ' + result.crafts + ' 回 → ' + result.produced + ' 個' +
             (result.surplus > 0 ? '（余剰 ' + result.surplus + ' 個）' : '') + '</div>';
     el.className = 'target-bar';
