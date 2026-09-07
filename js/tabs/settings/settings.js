@@ -150,11 +150,13 @@ FF14.settings.Panel = (function () {
   function bindData() {
     $('#hubExportAll').addEventListener('click', function () {
       FF14.core.Backup.exportAllToFile();
-      toast('3タブぶんをまとめてエクスポートしました');
+      toast('5タブぶんをまとめてエクスポートしました');
     });
     $('#hubExportNodes').addEventListener('click', function () { FF14.core.Backup.exportOneToFile('nodes'); });
     $('#hubExportAssets').addEventListener('click', function () { FF14.core.Backup.exportOneToFile('assets'); });
+    $('#hubExportRecipe').addEventListener('click', function () { FF14.core.Backup.exportOneToFile('recipe'); });
     $('#hubExportCraft').addEventListener('click', function () { FF14.core.Backup.exportOneToFile('craft'); });
+    $('#hubExportWatch').addEventListener('click', function () { FF14.core.Backup.exportOneToFile('watch'); });
 
     $('#hubImportBtn').addEventListener('click', function () { $('#hubImportFile').click(); });
     $('#hubImportFile').addEventListener('change', function (e) {
@@ -166,7 +168,18 @@ FF14.settings.Panel = (function () {
         try {
           var done = FF14.core.Backup.importFromText(String(reader.result));
           renderAll();
-          toast('インポートしました（' + done.join(' / ') + '）');
+          /* レシピ・市場は起動時にしか localStorage を読まないので、
+             取り込んだだけでは画面に出ない。案内を出す。 */
+          var msg = 'インポートしました（' + done.join(' / ') + '）';
+          if (FF14.core.Backup.needsReload(done)) {
+            msg += ' — レシピ／市場はページを再読み込みすると反映されます';
+          }
+          /* 一部だけ失敗した場合も、取り込めたぶんは残したうえで理由を出す */
+          if (done.failures && done.failures.length) {
+            toast(msg + ' / 取り込めなかったもの: ' + done.failures.join(' '), 'warn');
+          } else {
+            toast(msg);
+          }
         } catch (err) {
           toast('インポート失敗: ' + ((err && err.message) || err), 'warn');
         }

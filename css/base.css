@@ -88,6 +88,9 @@ body {
 #panel-craft .top { top: var(--hub-bar-h); }
 #panel-assets .entry-bar { top: var(--hub-bar-h); }
 #panel-craft .col-side { top: calc(var(--hub-bar-h) + 45px); }
+#panel-watch .entry-bar { top: var(--hub-bar-h); }
+/* レシピタブは shell.js が --rcp-bar-top / --rcp-sticky-top を実測して流し込むので、
+   ここでの上書きは不要です。 */
 
 /* ---------- アイテムアイコン（js/core/icons.js） ----------
    取得の成否にかかわらず同じ大きさの箱を先に置くので、

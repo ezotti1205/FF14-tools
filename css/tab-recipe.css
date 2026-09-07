@@ -1,0 +1,481 @@
+/* reverse.css — 素材逆引きツール
+   既存「作る vs 買う」タブ（css/tab-craft.css）と同じトークン・同じ部品名を使い、
+   単体ページでも見た目が地続きになるようにしている。 */
+.rcp-root {
+  --bg:#0e1116;
+  --panel:#161b22;
+  --panel-2:#1b212b;
+  --line:#262d38;
+  --line-soft:#1e242e;
+  --fg:#d6dde6;
+  --fg-dim:#8b94a3;
+  --fg-faint:#5e6775;
+  --accent:#4ea1ff;
+  --good:#3fb950;
+  --bad:#f06a62;
+  --warn:#d9a441;
+  --radius:6px;
+  --mono:"Consolas","SFMono-Regular",Menlo,monospace;
+  color-scheme:dark;
+  min-height:100%;
+  background:var(--bg);
+  color:var(--fg);
+  font:13px/1.5 system-ui,"Segoe UI","Yu Gothic UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+}
+.rcp-root [hidden] { display:none !important; }/* display:flex 等に hidden 属性が負けないように */
+   .rcp-root a { color:var(--accent); }/* フォーム部品の初期化。:where() で詳細度を 0 にしてあるのが要点で、
+   これが無いと .rcp-root button（詳細度 1-0-1）が .blink や .patch などの
+   クラス指定（0-1-0）に勝ってしまい、色とフォントサイズが全部無効になる。 */
+
+:where(.rcp-root) button, :where(.rcp-root) input, :where(.rcp-root) select, :where(.rcp-root) textarea { font:inherit; color:inherit; }
+.rcp-root code { font-family:var(--mono); background:var(--panel-2); padding:1px 5px; border-radius:4px; font-size:11.5px; }
+.rcp-root .dim { color:var(--fg-dim); }
+.rcp-root .faint { color:var(--fg-faint); }
+.rcp-root .warn { color:var(--warn); }
+.rcp-root .good { color:var(--good); }/* ---------- 上部バー ---------- */
+
+
+.rcp-root .top {
+  position:sticky; top:0; z-index:40;
+  display:flex; align-items:center; gap:10px;
+  padding:8px 12px;
+  background:rgba(14,17,22,.94);
+  backdrop-filter:blur(6px);
+  border-bottom:1px solid var(--line);
+}
+.rcp-root a.brand, .rcp-root .brand {
+  font-weight:700; letter-spacing:.04em; white-space:nowrap;
+  color:var(--fg-dim); font-size:12px; text-decoration:none;
+  padding:5px 8px; margin:-5px -8px; border-radius:var(--radius);
+}
+.rcp-root .brand span { color:var(--accent); margin-left:5px; }
+.rcp-root a.brand:hover { background:var(--panel-2); color:var(--fg); }
+.rcp-root a.brand:focus-visible { outline:1px solid var(--accent); }
+
+.rcp-root .pagenav { display:flex; gap:2px; }
+.rcp-root .pagenav a {
+  font-size:11.5px; text-decoration:none; color:var(--fg-dim);
+  border:1px solid transparent; border-radius:var(--radius); padding:5px 9px; white-space:nowrap;
+}
+.rcp-root .pagenav a:hover { color:var(--fg); border-color:var(--line); background:var(--panel); }
+.rcp-root .search-wrap { position:relative; flex:1; min-width:160px; max-width:520px; }
+.rcp-root #q {
+  width:100%; padding:6px 10px;
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  outline:none;
+}
+.rcp-root #q:focus { border-color:var(--accent); }
+.rcp-root #q:disabled { opacity:.5; }
+.rcp-root .top-right { display:flex; gap:8px; align-items:center; margin-left:auto; }
+
+.rcp-root .chk {
+  display:flex; align-items:center; gap:5px;
+  font-size:11.5px; color:var(--fg-dim); white-space:nowrap;
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:5px 9px; cursor:pointer; user-select:none;
+}
+.rcp-root .chk:hover { border-color:#39414e; color:var(--fg); }
+.rcp-root .chk input { accent-color:var(--accent); margin:0; }
+
+.rcp-root .btn {
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:6px 11px; cursor:pointer; white-space:nowrap;
+}
+.rcp-root .btn:hover { background:var(--panel-2); border-color:#39414e; }
+.rcp-root .btn:active { transform:translateY(1px); }
+.rcp-root .btn.primary { background:#1f4b7a; border-color:#2d6199; color:#dceaff; }
+.rcp-root .btn.primary:hover { background:#255a91; }
+.rcp-root .btn.ghost { background:transparent; }
+.rcp-root .btn.danger { color:var(--bad); }
+.rcp-root .btn.tiny { padding:2px 8px; font-size:11px; }
+.rcp-root .btn[disabled] { opacity:.45; cursor:default; }
+.rcp-root .btn[disabled]:hover { background:var(--panel); border-color:var(--line); }/* ---------- バナー / ステータス ---------- */
+
+
+.rcp-root .banner {
+  padding:8px 14px; font-size:12px;
+  background:#3a2a12; border-bottom:1px solid #55401b; color:#f0d3a0;
+  display:flex; align-items:center; gap:10px;
+}
+.rcp-root .banner.err { background:#3a1a1a; border-bottom-color:#5a2626; color:#f3b6b1; }
+
+.rcp-root .statusbar {
+  padding:6px 12px; font-size:11.5px; color:var(--fg-dim);
+  background:var(--panel); border-bottom:1px solid var(--line);
+}
+.rcp-root #status { display:flex; gap:16px; flex-wrap:wrap; }
+.rcp-root .statusbar b { color:var(--fg); font-weight:600; font-family:var(--mono); }
+
+.rcp-root main { padding:12px; max-width:1080px; margin:0 auto; }
+.rcp-root main.wide { max-width:1400px; }/* ---------- ホーム ---------- */
+
+
+.rcp-root .hero { padding:26px 4px 22px; text-align:center; }
+.rcp-root .hero h1 { margin:0 0 8px; font-size:26px; letter-spacing:.02em; }
+.rcp-root .hero .lead { margin:0 auto 18px; max-width:620px; color:var(--fg-dim); font-size:13px; line-height:1.8; }
+.rcp-root .hero .lead b { color:var(--fg); }
+.rcp-root .hero-search { max-width:560px; margin:0 auto; text-align:left; }
+.rcp-root .hero-search #q { padding:11px 14px; font-size:14px; }
+.rcp-root .hero-ex { margin-top:12px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; }
+
+.rcp-root .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin-bottom:16px; }
+.rcp-root .card {
+  display:block; text-decoration:none; color:inherit;
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px;
+}
+.rcp-root a.card:hover { border-color:var(--accent); background:var(--panel-2); }
+.rcp-root .card-t { font-size:14px; font-weight:700; margin-bottom:7px; }
+.rcp-root .card-d { font-size:12px; color:var(--fg-dim); line-height:1.8; }
+.rcp-root .card-d b { color:var(--fg); }
+.rcp-root .card.static { opacity:.85; }
+
+.rcp-root .recent-list { display:flex; flex-wrap:wrap; gap:6px; padding:11px; }
+.rcp-root .recent {
+  display:flex; align-items:center; gap:7px; text-decoration:none; color:var(--fg);
+  background:var(--panel-2); border:1px solid var(--line); border-radius:14px;
+  padding:4px 11px 4px 6px; font-size:12px;
+}
+.rcp-root .recent:hover { border-color:var(--accent); }
+.rcp-root .recent-meta { display:flex; gap:4px; }/* ---------- 条件から探す ---------- */
+
+
+.rcp-root .page-h { font-size:24px; margin:6px 0 8px; }
+.rcp-root .page-lead { color:#9aa4b2; font-size:12.5px; line-height:1.9; margin:0 0 16px; max-width:900px; }
+
+.rcp-root .jobtabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+.rcp-root .jobtab {
+  display:flex; align-items:center; gap:8px;
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:9px 14px; cursor:pointer; font-size:13px; color:var(--fg);
+}
+.rcp-root .jobtab:hover { background:var(--panel-2); border-color:#4a5566; }
+.rcp-root .jobtab.on { background:#245089; border-color:#3d7fd0; color:#fff; font-weight:700; }
+.rcp-root .jobtab .jt-n { font-family:var(--mono); font-size:11px; color:var(--fg-dim); }
+.rcp-root .jobtab.on .jt-n { color:#cfe4ff; }
+
+.rcp-root .chipbar { display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin-bottom:12px; font-size:12.5px; }
+.rcp-root .chip {
+  display:inline-flex; align-items:center; gap:7px;
+  background:#245089; border:1px solid #3d7fd0; color:#fff;
+  border-radius:14px; padding:4px 12px; cursor:pointer; font-size:12.5px;
+}
+.rcp-root .chip:hover { background:#2b5da0; border-color:#5b9ae0; }
+.rcp-root .chip-k { color:#a8c9f0; font-size:11px; }
+.rcp-root .chip-x { color:#cfe4ff; font-weight:700; }
+
+.rcp-root .browse-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px; margin-bottom:14px; }
+.rcp-root .bcard { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+.rcp-root .bcard-h {
+  padding:10px 13px; background:var(--panel-2); border-bottom:1px solid var(--line);
+  font-size:13px; font-weight:700; color:#e8edf3; letter-spacing:.02em;
+}
+.rcp-root .bcard-list { list-style:decimal; margin:0; padding:8px 12px 10px 34px; max-height:340px; overflow-y:auto; }
+.rcp-root .bcard-list li { color:var(--fg-dim); font-size:12px; padding:1px 0; }
+.rcp-root .bcard-list li::marker { font-family:var(--mono); font-size:11px; }
+.rcp-root .blink {
+  display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;
+  background:none; border:0; border-bottom:1px solid var(--line-soft);
+  color:#7cbcff; text-align:left; cursor:pointer; font-size:13px; padding:7px 4px;
+  border-radius:4px;
+}
+.rcp-root .blink:hover { color:#b3d9ff; background:#233047; }
+.rcp-root .blink.on { color:#fff; font-weight:700; background:#245089; border-bottom-color:transparent; }
+.rcp-root .blink .bn {
+  flex:none; font-family:var(--mono); font-size:11.5px; color:#a2abb8;
+  background:rgba(255,255,255,.06); border-radius:9px; padding:0 7px;
+}
+.rcp-root .blink:hover .bn { color:var(--fg); }
+.rcp-root .blink.on .bn { color:#fff; background:rgba(255,255,255,.18); }/* 条件から探すの結果表（6列・逆引きとは別配分） */
+
+
+.rcp-root .rev-head.brw, .rcp-root .rrow.brw {
+  grid-template-columns:minmax(0,1fr) 56px 60px 56px 88px 62px;
+}
+.rcp-root a.rrow.brw { text-decoration:none; color:inherit; }
+.rcp-root a.rrow.brw:hover .nm { color:var(--accent); }/* ---------- 候補リスト ---------- */
+
+
+.rcp-root .suggest {
+  position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:50;
+  max-height:min(60vh,420px); overflow:auto;
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:0 12px 32px rgba(0,0,0,.55);
+}
+.rcp-root .sg {
+  display:flex; align-items:center; gap:8px; padding:6px 10px;
+  cursor:pointer; border-bottom:1px solid var(--line-soft);
+}
+.rcp-root .sg:last-child { border-bottom:0; }
+.rcp-root .sg:hover, .rcp-root .sg.on { background:#20293a; }
+.rcp-root .sg-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rcp-root .sg-en { color:var(--fg-faint); font-size:11px; max-width:38%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.rcp-root .sg-hit {
+  font-family:var(--mono); font-size:10.5px; white-space:nowrap;
+  border:1px solid #2d5f36; color:var(--good); border-radius:10px; padding:0 7px;
+}
+.rcp-root .sg-hit.zero { border-color:var(--line); color:var(--fg-faint); }
+.rcp-root .sg-mk {
+  font-size:10.5px; white-space:nowrap;
+  border:1px solid #2d6199; color:var(--accent); border-radius:10px; padding:0 6px;
+}
+.rcp-root .sg-empty { padding:12px 10px; color:var(--fg-dim); font-size:12px; }
+.rcp-root .sg-empty b { color:var(--fg); }/* ---------- パネル ---------- */
+.rcp-root .panel {
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  /* clip は hidden と違いスクロールコンテナを作らないので、中の .rev-head の sticky が生きる */
+  overflow:clip; margin-bottom:12px;
+}
+.rcp-root .panel-h {
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:7px 11px; background:var(--panel-2); border-bottom:1px solid var(--line);
+  font-size:11.5px; color:var(--fg-dim);
+}
+.rcp-root .panel-h strong { color:var(--fg); font-size:12.5px; font-weight:700; }
+.rcp-root .panel-h .count { font-family:var(--mono); color:var(--accent); }
+.rcp-root .panel-body { padding:11px; }/* ---------- 対象アイテムカード ---------- */
+
+
+.rcp-root .item-card {
+  display:flex; gap:12px; align-items:center;
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:11px 13px; margin-bottom:12px;
+}
+.rcp-root .item-meta { min-width:0; flex:1; }
+.rcp-root .item-ja { font-size:16px; font-weight:600; }
+.rcp-root .item-en { color:var(--fg-faint); font-size:11px; }
+.rcp-root .item-en .id { font-family:var(--mono); }
+.rcp-root .item-badges { margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.rcp-root .badge {
+  display:inline-block; padding:1px 8px; border-radius:10px; font-size:10.5px;
+  border:1px solid var(--line); color:var(--fg-dim); background:var(--panel-2);
+}
+.rcp-root .badge.ok { color:var(--good); border-color:#2d5f36; }
+.rcp-root .badge.hot { color:var(--accent); border-color:#2d6199; }/* ---------- A. 作り方（レシピ＋素材一覧） ---------- */
+
+
+.rcp-root .make-list { list-style:none; margin:0; padding:0; }
+.rcp-root .make-recipe { border-bottom:1px solid var(--line); }
+.rcp-root .make-recipe:last-child { border-bottom:0; }
+
+.rcp-root .mr-head {
+  display:flex; align-items:center; gap:9px; flex-wrap:wrap;
+  padding:7px 11px; background:var(--panel-2); font-size:12px;
+}
+.rcp-root .mr-lv { min-width:38px; }
+.rcp-root .mr-patch { margin-left:auto; }
+
+.rcp-root .ing-list { list-style:none; margin:0; padding:0; }
+.rcp-root .ing {
+  display:flex; align-items:center; gap:7px;
+  padding:5px 11px 5px 26px;
+  border-bottom:1px solid var(--line-soft);
+  font-size:12px; cursor:pointer;
+}
+.rcp-root .ing:last-child { border-bottom:0; }
+.rcp-root .ing:hover { background:#1a212b; }
+.rcp-root .ing:hover .nm { color:var(--accent); }
+.rcp-root .ing .nm { flex:1; min-width:0; }
+.rcp-root .ing-qty { margin-left:auto; min-width:46px; color:var(--fg); }
+.rcp-root .badge.tiny-b { font-size:9.5px; padding:0 6px; }/* ---------- 逆引き: クラフター職ごとのプルダウン ---------- */
+
+
+.rcp-root .grp-bar {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:7px 11px; border-bottom:1px solid var(--line); font-size:11.5px;
+}
+.rcp-root .grp-bar-r { margin-left:auto; }
+
+.rcp-root .jobgrp { border-bottom:1px solid var(--line); }
+.rcp-root .jobgrp:last-child { border-bottom:0; }
+.rcp-root .jobgrp-h {
+  display:flex; align-items:center; gap:9px; width:100%;
+  background:none; border:0; color:var(--fg); text-align:left;
+  padding:9px 11px; cursor:pointer; font-size:12.5px;
+}
+.rcp-root .jobgrp-h:hover { background:#1a212b; }
+.rcp-root .jobgrp.open > .jobgrp-h { background:var(--panel-2); }
+.rcp-root .jg-caret { color:var(--accent); font-size:9px; width:12px; flex:none; }
+.rcp-root .jg-name { font-weight:600; }
+.rcp-root .jg-lv { font-family:var(--mono); font-size:11px; }
+.rcp-root .jg-count { margin-left:auto; font-family:var(--mono); font-size:11.5px; color:var(--accent); }
+.rcp-root .jobgrp-body { border-top:1px solid var(--line); }/* ---------- 逆引きテーブル ---------- */
+
+
+.rcp-root .rev-head, .rcp-root .rrow {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 74px 84px 54px 66px 62px;
+  gap:8px; align-items:center;
+  padding:5px 11px;
+}
+.rcp-root .rev-head {
+  background:var(--panel-2); border-bottom:1px solid var(--line);
+  color:#a2abb8; font-size:11.5px; font-weight:600;
+  /* 上部バーの実測高は shell.js が --rcp-sticky-top に流し込む */
+  position:sticky; top:var(--rcp-sticky-top, 51px); z-index:10;
+}
+.rcp-root .rev-head .r { text-align:right; }
+.rcp-root .rev-head .c { text-align:center; }/* 並び替えできる列見出し */
+
+
+.rcp-root .rev-head .sortable {
+  cursor:pointer; user-select:none; border-radius:3px;
+  padding:1px 4px; margin:-1px -4px;
+}
+.rcp-root .rev-head .sortable:hover { background:#26304150; color:var(--fg); }
+.rcp-root .rev-head .sortable:focus-visible { outline:1px solid var(--accent); outline-offset:1px; }
+.rcp-root .rev-head .sortable.on { color:var(--accent); font-weight:600; }
+.rcp-root .rev-head .arrow { font-size:8px; margin-left:3px; letter-spacing:0; }
+.rcp-root .rrow { border-bottom:1px solid var(--line-soft); min-height:34px; }
+.rcp-root .rrow:last-child { border-bottom:0; }
+.rcp-root .rrow:hover { background:#1a212b; }
+.rcp-root .rrow.depth-1 { background:rgba(78,161,255,.03); }
+.rcp-root .rrow.depth-2 { background:rgba(78,161,255,.05); }
+.rcp-root .rrow.depth-3 { background:rgba(78,161,255,.07); }
+
+.rcp-root .name-cell { display:flex; align-items:center; gap:6px; min-width:0; }
+.rcp-root .indent { flex:0 0 auto; }
+.rcp-root .caret {
+  flex:0 0 auto; width:16px; height:16px; line-height:14px; text-align:center;
+  border:1px solid var(--line); border-radius:3px; background:var(--panel-2);
+  cursor:pointer; font-size:9px; color:var(--fg-dim); user-select:none; padding:0;
+}
+.rcp-root .caret:hover { border-color:var(--accent); color:var(--accent); }
+.rcp-root .caret.blank { border-color:transparent; background:none; cursor:default; }
+.rcp-root .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; font-size:12.5px; }
+.rcp-root .nm:hover { color:var(--accent); text-decoration:underline; }
+.rcp-root .nm small { color:var(--fg-dim); margin-left:7px; font-size:11px; }
+.rcp-root .num { font-family:var(--mono); font-size:12px; text-align:right; }
+.rcp-root .num.dim { color:var(--fg-dim); }
+.rcp-root .cell-c { display:flex; justify-content:center; }
+.rcp-root .cyc { font-size:10px; color:var(--warn); border:1px solid var(--warn); border-radius:8px; padding:0 5px; }/* ジョブバッジ */
+
+
+.rcp-root .job {
+  display:inline-block; font-size:10.5px; border-radius:10px; padding:1px 7px;
+  background:var(--panel-2); border:1px solid var(--line); white-space:nowrap;
+}
+.rcp-root .job-8 { color:#c98f6b; border-color:#4a3a2c; }/* 木工 */
+  .rcp-root .job-9 { color:#a8b2bd; border-color:#3a4048; }/* 鍛冶 */
+  .rcp-root .job-10 { color:#8fa9c9; border-color:#31414f; }/* 甲冑 */
+  .rcp-root .job-11 { color:#d8c06a; border-color:#4c452a; }/* 彫金 */
+  .rcp-root .job-12 { color:#bb8f63; border-color:#48382a; }/* 革細工 */
+  .rcp-root .job-13 { color:#b98fc9; border-color:#43334c; }/* 裁縫 */
+  .rcp-root .job-14 { color:#6bbf9c; border-color:#2b4a3d; }/* 錬金 */
+  .rcp-root .job-15 { color:#c98a8a; border-color:#4a3030; }/* 調理 */
+  .rcp-root .job-x { color:var(--fg-faint); }/* 会社製作・特殊製作 */
+/* パッチチップ */
+                .rcp-root .patch {
+  font-family:var(--mono); font-size:11px; border-radius:10px; padding:1px 7px;
+  cursor:pointer; background:var(--panel-2); border:1px solid var(--line); color:var(--fg-dim);
+}
+.rcp-root .patch:hover { border-color:var(--accent); color:var(--accent); }
+.rcp-root .patch-file { color:var(--fg); border-color:#2d6199; }
+.rcp-root .patch-local { color:var(--good); border-color:#2d5f36; }/* 逆引きテーブルの列は表示専用（並び替えのためだけの列） */
+
+.rcp-root .patch.ro { cursor:default; }
+.rcp-root .patch.ro:hover { border-color:var(--line); }
+.rcp-root .patch.ro.patch-file:hover { border-color:#2d6199; color:var(--fg); }
+.rcp-root .patch.ro.patch-local:hover { border-color:#2d5f36; color:var(--good); }
+.rcp-root .patch.ro.patch-default:hover { color:var(--fg-dim); }
+
+.rcp-root .more {
+  display:block; width:100%; margin:0; border:0; border-top:1px solid var(--line);
+  background:var(--panel-2); color:var(--accent);
+  padding:9px; font-size:12px; cursor:pointer;
+}
+.rcp-root .more:hover { background:#20293a; }/* ---------- 空状態 / ヒント ---------- */
+
+
+.rcp-root .empty { padding:22px 16px; text-align:center; }
+.rcp-root .empty .big { font-size:14px; color:var(--fg); margin-bottom:6px; }
+.rcp-root .empty .why { font-size:12px; color:var(--fg-dim); line-height:1.75; max-width:620px; margin:0 auto; }
+.rcp-root .empty .why b { color:var(--fg); }
+.rcp-root .empty .acts { margin-top:14px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+
+.rcp-root .hint { padding:26px 18px; text-align:center; color:var(--fg-dim); }
+.rcp-root .hint .big { font-size:15px; color:var(--fg); margin-bottom:8px; }
+.rcp-root .hint .kbd {
+  font-family:var(--mono); font-size:11px; border:1px solid var(--line);
+  border-radius:4px; padding:1px 6px; background:var(--panel-2); color:var(--fg-dim);
+}
+.rcp-root .hint .examples { margin-top:14px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }/* ---------- パッチ台帳 ---------- */
+
+
+.rcp-root .ledger .panel-h { cursor:pointer; }
+.rcp-root .ledger .panel-h:hover { background:#20293a; }
+.rcp-root .ledger-body { padding:12px; font-size:12px; border-top:1px solid var(--line); }
+.rcp-root .ledger-body p { margin:0 0 10px; line-height:1.7; color:var(--fg-dim); }
+.rcp-root .ledger-btns { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+.rcp-root .ledger-out {
+  width:100%; min-height:220px;
+  background:var(--bg); color:var(--fg);
+  border:1px solid var(--line); border-radius:var(--radius);
+  padding:10px; font-family:var(--mono); font-size:11px; resize:vertical; outline:none;
+}
+.rcp-root .ledger-out:focus { border-color:var(--accent); }
+
+.rcp-root .note { font-size:11px; color:var(--fg-faint); line-height:1.7; }
+.rcp-root .note.foot { margin-top:16px; text-align:center; }/* ---------- スクロールバー ---------- */
+
+
+.rcp-root *::-webkit-scrollbar { width:10px; height:10px; }
+.rcp-root *::-webkit-scrollbar-thumb { background:#2b3341; border-radius:5px; border:2px solid var(--bg); }
+.rcp-root *::-webkit-scrollbar-track { background:transparent; }/* ---------- 狭い画面 ---------- */
+
+
+@media (max-width:760px) {/* 表組みは崩すが、並び替えは残したいので見出しはチップ列にする */
+
+  .rcp-root .rev-head {
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+    position:static; padding:7px 10px;
+  }
+  .rcp-root .rev-head > div:not(.sortable) { display:none; }
+  .rcp-root .rev-head::before { content:'並び替え:'; color:var(--fg-faint); }
+  .rcp-root .rev-head .sortable {
+    border:1px solid var(--line); background:var(--panel);
+    border-radius:10px; padding:2px 9px; margin:0;
+  }
+  .rcp-root .rev-head .sortable.on { border-color:#2d6199; }
+  .rcp-root .rrow {
+    display:flex; flex-wrap:wrap; align-items:center;
+    row-gap:5px; column-gap:9px; padding:8px 10px;
+  }
+  .rcp-root .rrow .name-cell { flex:1 1 100%; }
+  .rcp-root .rrow .cell { flex:0 0 auto; font-size:11px; display:flex; align-items:center; gap:4px; }
+  .rcp-root .rrow .cell::before { content:attr(data-label); color:var(--fg-faint); }
+  .rcp-root .rrow .num { text-align:left; font-size:11px; }
+}
+@media (max-width:620px) {
+  .rcp-root .top { flex-wrap:wrap; }
+  .rcp-root .search-wrap { order:3; flex:1 1 100%; max-width:none; }
+  .rcp-root .hero h1 { font-size:21px; }
+  .rcp-root .page-h { font-size:19px; }
+  .rcp-root .jobtab { padding:7px 10px; font-size:11.5px; }
+  .rcp-root .pagenav a { padding:5px 7px; }
+  .rcp-root .sg-en { display:none; }
+  .rcp-root .nm small { display:none; }/* 英名は幅を食うので畳む */
+          .rcp-root .item-en { font-size:10.5px; }
+  .rcp-root main { padding:8px; }
+}
+
+/* ---------- ビュー切り替え（ホーム / 条件から探す / 検索・逆引き） ---------- */
+.rcp-root .rcp-view[hidden] { display:none !important; }
+
+/* 上部バーは、ハブに載ったときだけハブバーの下に貼り付く */
+.rcp-root .top { top:var(--rcp-bar-top, 0px); }
+
+/* ホームは大きいヒーロー検索を使うので、上部バーの検索は隠す */
+.rcp-root[data-view="home"] .topsearch { display:none; }
+
+/* 「素材になるものだけ」は検索ビューでだけ意味を持つ */
+.rcp-root:not([data-view="search"]) .onsearch { display:none; }
+
+/* いま開いているビューをナビで示す */
+.rcp-root[data-view="home"]   .pagenav a[data-goview="home"],
+.rcp-root[data-view="browse"] .pagenav a[data-goview="browse"],
+.rcp-root[data-view="search"] .pagenav a[data-goview="search"] {
+  color:var(--fg); background:var(--panel); border-color:var(--line); font-weight:600;
+}
+
+/* ハブのタブに載ったときは、パネル自身が背景を持たない（ハブ側に任せる） */
+.hub-panel.rcp-root { min-height:0; background:transparent; }

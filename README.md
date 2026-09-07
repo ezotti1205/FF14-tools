@@ -1,17 +1,22 @@
 # FF14 ギャザクラ支援ツール（統合版）
 
-これまで別々に作った3本を、**タブ切り替えの1ページ**にまとめたものです。ブラウザのタブは1つで完結します。
+これまで別々に作った5本を、**タブ切り替えの1ページ**にまとめたものです。ブラウザのタブは1つで完結します。
 
 | タブ | 中身 | 統合前 |
 | --- | --- | --- |
 | ノード | 時間限定ノード（刻限／未知／伝説）のカウントダウンと出現通知 | `legacy/ff14-gather-timer/` |
 | 総資産 | 総資産額の推移を記録・グラフ化する帳簿 | `legacy/ff14-assets/` |
+| レシピ | アイテムの作り方と、素材からの逆引き（条件検索つき） | 単体版「FF14素材逆引きツール」 |
 | 作る vs 買う | 素材から作るか完成品を買うかの損益判定（Universalis） | `legacy/ff14-craft-profit/` |
-| 設定 | 3本ぶんの設定と、データのまとめてエクスポート／インポート | （新規） |
+| 市場 | アイテムを検索して現在価格を確認・登録リストで見張る | 単体版「市場チェック」 |
+| 設定 | 5本ぶんの設定と、データのまとめてエクスポート／インポート | （新規） |
 
+タブの並びは **採集 → 調べる → 作る判断 → 相場を見る** の順です。
 タブバーの右端に、**エオルゼア時間（ET）と現実時刻**が常駐します。
 
-この統合版がリポジトリのルートです。統合前の個別ツール3本は `legacy/` 以下にそのまま残してあります（バックアップ兼、元コードの参照用）。
+この統合版がリポジトリのルートです。最初に統合した3本の単体版は `legacy/` 以下にそのまま残してあります
+（バックアップ兼、元コードの参照用）。あとから足したレシピ・市場の2本は、単体版のコードを
+このリポジトリへ取り込んだので `legacy/` には置いていません。
 
 ## 起動
 
@@ -33,14 +38,16 @@ powershell -ExecutionPolicy Bypass -File serve.ps1
 ## ファイル構成
 
 ```
-index.html                画面。4タブぶんのHTMLがここに並んでいます
+index.html                画面。6タブぶんのHTMLがここに並んでいます
 favicon.svg               タブ・ピン留め用アイコン（青いクリスタル）
 serve.ps1                 動作確認用の簡易HTTPサーバ（Windows標準のPowerShellのみ）
 
 css/base.css              外枠（タブバー・パネル）と全体リセット。ここだけが :root を持ちます
 css/tab-nodes.css         ┐ 元アプリのCSSを #panel-xxx 配下に限定したもの
 css/tab-assets.css        │ （元の :root / body は #panel-xxx に置き換わっています）
-css/tab-craft.css         ┘
+css/tab-craft.css         │
+css/tab-watch.css         ┘
+css/tab-recipe.css        レシピタブ。元から .rcp-root 配下にスコープ済みなので無加工
 css/tab-settings.css      設定タブ
 
 js/core/eorzea.js         ET計算（共通モジュール。時計も各タブもこれを使います）
@@ -48,6 +55,7 @@ js/core/hub.js            名前空間 window.FF14 と、通知の一括ON/OFF�
 js/core/tabs.js           タブ切り替え、最後のタブの記憶、初期化のタイミング管理
 js/core/clock.js          タブバー右端の ET / 現実時刻
 js/core/icons.js          アイテムアイコン（XIVAPI v2）。取得・キャッシュ・DOMへの差し込み
+js/core/universalis.js    Universalis クライアント。作る vs 買う / 市場 の2タブで共有
 js/core/backup.js         まとめてエクスポート／インポート（個別ファイルの自動判別つき）
 
 js/tabs/nodes/app.js      ノードタブ（元 gather-timer のインラインスクリプト）
@@ -55,11 +63,36 @@ data/nodes.js             ノード一覧（225件）。書き換えてリロー
 
 js/tabs/assets/*.js       総資産タブ（util / store / agg / chart / app）
 js/tabs/craft/*.js        作る vs 買うタブ（store / gamedata / universalis / calc / ui / main）
+js/tabs/recipe/*.js       レシピタブ（patchdata / reverse / shell / view / suggest / home / app / browse / main）
+js/tabs/watch/*.js        市場タブ（store / universalis / marketable / xivapi / app）
 js/tabs/settings/*.js     設定タブ
 
 tools/scope-css.awk       CSSを #panel-xxx 配下に機械的に限定するフィルタ（下記）
 vendor/                   （任意）Chart.js をオフラインで使う場合の置き場
 ```
+
+### レシピDB・Universalis・アイコンの共有
+
+同じものを2つ持たないよう、次の3つは1か所にまとめてあります。
+
+| 共有しているもの | 実体 | 使っているタブ |
+| --- | --- | --- |
+| レシピ / アイテムDB | `js/tabs/craft/gamedata.js`（`FF14.craft.GameData`） | 作る vs 買う・レシピ |
+| Universalis クライアント | `js/core/universalis.js` | 作る vs 買う・市場 |
+| アイテムアイコン | `js/core/icons.js`（`FF14.core.Icons`） | 作る vs 買う・レシピ・市場 |
+
+- **レシピDB** … レシピタブは素材の逆引きに全レシピの走査が要るので、`gamedata.js` に
+  `eachRecipe()` / `recipeCount()` / `itemCount()` を足してあります。データの持ち方・
+  整形ロジックは元のままです。IndexedDB（`ff14cp`）も1つを共有します。
+- **Universalis** … 実装は `js/core/universalis.js` の1本だけで、`createUniversalis({store, appName})`
+  に Store を渡して各タブぶんのクライアントを作ります。**価格キャッシュの保存先はタブごとに別**
+  （craft は `ff14cp.*` / watch は `ff14watch.v1.prices`）なので、キー体系は単体版のままです。
+  1リクエストは20件・504時は2回まで取り直し（40件以上だと必ず504になるため）。
+- **アイコン** … 市場タブは XIVAPI の検索応答にアイコンのパスが入っているので、
+  `Icons.prime(id, path)` でキャッシュへ流し込んでから `Icons.element(id, name, size)` で
+  描画します。同じパスを取り直さずに済みます。
+  `element()` は `placeholder()` と違い `loading="lazy"` を使わず、失敗したら一度だけ張り直します
+  （一覧に数十件並ぶと、画面外と判定されたまま読み込まれず歯抜けになるため）。
 
 ### なぜ ES Modules にしなかったか
 
@@ -71,10 +104,12 @@ vendor/                   （任意）Chart.js をオフラインで使う場合
 名前空間ひとつだけにぶら下げる形にしました。
 
 ```
-FF14.core   … Hub / Tabs / Clock / Icons / Backup（共通）
-FF14.nodes  … App
-FF14.assets … U / Store / Agg / ChartView / App
-FF14.craft  … Store / GameData / Universalis / Calc / UI / api
+FF14.core    … Hub / Tabs / Clock / Icons / createUniversalis / Backup（共通）
+FF14.nodes   … App
+FF14.assets  … U / Store / Agg / ChartView / App
+FF14.craft   … Store / GameData / Universalis / Calc / UI / api
+FF14.reverse … PatchData / PATCH / Index / Shell / View / Suggest / Home / Search / Browse
+FF14.watch   … Store / Universalis / Marketable / XIVAPI
 ```
 
 元アプリのロジック（ET計算、Universalis連携、資産グラフの集計）は**中身を変えていません**。
@@ -86,8 +121,9 @@ FF14.craft  … Store / GameData / Universalis / Calc / UI / api
   他のタブを見ている間もカウントダウンと通知判定を続けます。
   ブラウザが非表示タブのタイマーを間引くことがあるので、画面に戻ったとき
   （`visibilitychange` とタブ切り替え）に必ず計算し直します。
-- **総資産・作る vs 買う・設定は、最初に開かれたときに初期化**します（`eager: false`）。
-  特に `作る vs 買う` はレシピDBの初回ダウンロードが約1.8MBあるため、開くまで取りに行きません。
+- **ノード以外は、最初に開かれたときに初期化**します（`eager: false`）。開くまで通信しません。
+  - `作る vs 買う` と `レシピ` … レシピDBの初回ダウンロードが約2MB（2タブで1つを共有）
+  - `市場` … 出品可能アイテム一覧（約16,800件）とワールド一覧の取得
 - 入力中のフォームやツリーの状態は、タブを切り替えても消えません（パネルを隠しているだけです）。
 - タブごとのスクロール位置も覚えています。
 - **最後に開いていたタブは `localStorage` に保存**され、次回はそこから開きます。
@@ -143,15 +179,20 @@ FF14.core.Icons.hydrate(el);                            // 差し込んだ直後
 
 ## localStorage のキー
 
-3本ぶんのキーは互いに衝突しません（統合にあたって変更もしていないので、
-統合前のデータはそのまま引き継がれます）。
+5本ぶんのキーは互いに衝突しません（統合にあたって変更していないので、
+単体版のデータはそのまま引き継がれます）。
 
 | タブ | キー |
 | --- | --- |
 | ノード | `ff14-gather-timer/v1`（設定・お気に入り・通知）、`ff14-gather-timer/nodes/v1`（取り込んだノード一覧） |
 | 総資産 | `ff14assets.v1.records` / `.settings` / `.calcdraft` |
+| レシピ | `ff14reverse.v1.lastItem` / `.recent` / `.ui` / `.patch.items` / `.patch.recipes` |
 | 作る vs 買う | `ff14cp.settings` / `.state` / `.price` / `.worlds` ＋ IndexedDB `ff14cp`（レシピDB） |
+| 市場 | `ff14watch.v1.favs` / `.settings` / `.prices` / `.worlds` / `.marketable` |
 | 統合版 | `ff14hub.v1.settings`（通知の一括ON/OFF）、`ff14hub.v1.ui`（最後のタブ）、`ff14hub.v1.icons`（アイテムID→アイコンのgame path） |
+
+レシピタブは IndexedDB `ff14cp` を「作る vs 買う」と共有します（同じ teamcraft のDBなので
+2回ダウンロードしません）。市場タブの価格キャッシュは `ff14cp.price` とは別物です。
 
 総資産は旧・収支ログ（`ff14ledger.v1.*`）とは完全に別のキーで、コード上にも旧キーへの参照は残っていません。
 
@@ -159,10 +200,16 @@ FF14.core.Icons.hydrate(el);                            // 差し込んだ直後
 
 設定タブに集約しています。
 
-- **全部まとめてエクスポート** … 3本ぶんを1つのJSONに（`ff14-hub-all-YYYY-MM-DD.json`）
-- **個別にエクスポート** … ノード／総資産／作る vs 買う を別々に
+- **全部まとめてエクスポート** … 5本ぶんを1つのJSONに（`ff14-hub-all-YYYY-MM-DD.json`）
+- **個別にエクスポート** … ノード／総資産／レシピ／作る vs 買う／市場 を別々に
 - **インポート** … まとめたファイルでも、統合前の個別ファイル
   （`ff14-assets` / `ff14-craft-profit` / `ff14-gather-timer` のもの）でも、中身を見て自動で振り分けます
+
+書き出さないもの: **価格・ワールド一覧・出品可否・アイコンのキャッシュ**。取り直せるうえ大きいためです
+（特に出品可否は約16,800件あります）。
+
+1つのタブの取り込みに失敗しても、**残りのタブは取り込みます**（失敗した分は理由つきで画面に出ます）。
+レシピ・市場は起動時にしか localStorage を読まないので、取り込んだあと**ページを再読み込み**すると反映されます。
 
 総資産タブの中にも従来どおりのエクスポート／インポートがあります。
 設定タブからのインポートは**置き換え**、総資産タブからのインポートは**置き換え／追記を選べる**ので、

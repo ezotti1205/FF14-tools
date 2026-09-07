@@ -33,6 +33,7 @@ FF14.core.Icons = (function () {
   var MAX_ENTRIES = 2000;       // localStorage が肥大しないよう上限
   var MISSING_TTL = 24 * 3600 * 1000;   // 404（そのIDにアイコンが無い）を再挑戦するまで
   var SOFT_TTL = 5 * 60 * 1000;         // 通信エラー・タイムアウトを再挑戦するまで
+  var EAGER_RETRY_MS = 1200;            // eager な枠で画像が落ちたときに張り直すまでの間
 
   /* paths: { itemId: "ui/icon/035000/035022.tex" }
      missing: { itemId: 404だった時刻(ms) } — こちらは localStorage に残す */
@@ -287,14 +288,29 @@ FF14.core.Icons = (function () {
     if (!url) return false;
     if (span.getAttribute('data-icon-done') === url) return true;
 
+    /* data-icon-eager が付いた枠は loading="lazy" を使わず、失敗したら一度だけ張り直す。
+       市場タブのように数十件が一度に並ぶ一覧では、画面外と判定されたまま読み込まれず
+       アイコンが歯抜けになるため。 */
+    var eager = span.hasAttribute('data-icon-eager');
+    var retried = false;
+
     var img = document.createElement('img');
-    img.src = url;
     img.alt = span.getAttribute('data-icon-alt') || '';
-    img.loading = 'lazy';
     img.decoding = 'async';
+    if (!eager) img.loading = 'lazy';
     /* 画像だけ落ちた場合も枠を残して崩さない */
     img.onerror = function () {
       try {
+        if (eager && !retried) {
+          /* 同時接続が詰まっただけのことがあるので一度だけ張り直す */
+          retried = true;
+          setTimeout(function () {
+            if (img.parentNode === span) {
+              img.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'r=1';
+            }
+          }, EAGER_RETRY_MS);
+          return;
+        }
         span.removeAttribute('data-icon-done');
         if (img.parentNode === span) span.removeChild(img);
         span.classList.add('is-failed');
@@ -303,6 +319,7 @@ FF14.core.Icons = (function () {
     span.innerHTML = '';
     span.classList.remove('is-failed');
     span.appendChild(img);
+    img.src = url;
     span.setAttribute('data-icon-done', url);
     return true;
   }
@@ -346,6 +363,68 @@ FF14.core.Icons = (function () {
   /** DOMを介さずに先読みしたいとき用 */
   function prefetch(ids) { return resolve(ids); }
 
+  /**
+   * すでに分かっている game path をキャッシュへ流し込む。
+   * 市場タブの検索は XIVAPI の応答に Icon.path が入っているので、
+   * これを使えば同じアイテムのパスを取り直さずに済みます（リクエストが増えません）。
+   *
+   * @param {number} id アイテムID
+   * @param {string} pathOrUrl "ui/icon/020000/020801.tex" でも、assetUrl() 済みのURLでも可
+   * @returns {boolean} 取り込めたか
+   */
+  function prime(id, pathOrUrl) {
+    var key = normId(id);
+    if (!key || !pathOrUrl) return false;
+
+    var p = String(pathOrUrl);
+    if (/^https?:/.test(p)) {
+      /* assetUrl() が作ったURLなら path= を取り出す。他所のURLは扱わない */
+      var m = /[?&]path=([^&]+)/.exec(p);
+      if (!m) return false;
+      try { p = decodeURIComponent(m[1]); } catch (e) { return false; }
+    }
+    if (!p) return false;
+
+    if (cache.paths[key] === p) return true;
+    cache.paths[key] = p;
+    delete cache.missing[key];
+    delete softMissing[key];
+    saveSoon();
+    return true;
+  }
+
+  /**
+   * アイコン枠を DOM要素として返す。文字列を組み立てずに appendChild したいとき用。
+   * placeholder() と違い loading="lazy" を使わず、失敗したら一度だけ張り直します
+   * （一覧に数十件並べても歯抜けにならないようにするため）。
+   *
+   * @param {number} id アイテムID
+   * @param {string} [name] alt に使うアイテム名
+   * @param {string} [size] 'sm' | 'lg'
+   * @returns {HTMLSpanElement} 取得の成否にかかわらず同じ大きさの箱
+   */
+  function element(id, name, size) {
+    var span = document.createElement('span');
+    span.className = 'ff14-icon' + (size ? ' ff14-icon-' + size : '');
+    var key = normId(id);
+    if (!key) {
+      span.classList.add('is-failed');
+      return span;
+    }
+    span.setAttribute('data-icon-item', key);
+    span.setAttribute('data-icon-eager', '1');
+    if (name) span.setAttribute('data-icon-alt', name);
+
+    if (!paint(span) && !isMissing(key)) {
+      /* キャッシュに無いものだけ取りに行く。失敗しても枠はそのまま残る */
+      resolve([key]).then(function () {
+        if (span.isConnected === false) return;
+        try { paint(span); } catch (e) { /* 表示だけの問題 */ }
+      }, noop);
+    }
+    return span;
+  }
+
   function clear() {
     cache = { paths: {}, missing: {} };
     softMissing = {};
@@ -365,6 +444,8 @@ FF14.core.Icons = (function () {
     placeholder: placeholder,
     hydrate: hydrate,
     prefetch: prefetch,
+    prime: prime,
+    element: element,
     resolve: resolve,
     urlOf: urlOf,
     pathOf: pathOf,

@@ -223,6 +223,19 @@ var GameData = (function () {
   function isCrystal(itemId) { return itemId >= 2 && itemId <= 19; }
   function dataAge() { return loadedAt; }
 
+  /* ---------- レシピタブ用の参照 ----------
+     ここは「完成品ID → レシピ」しか公開していないので、素材の逆引き
+     （素材ID → それを使うレシピ）を組み立てられるよう全レシピを走査できる
+     ようにしただけ。データの持ち方・整形ロジックには手を入れていない。 */
+  function eachRecipe(cb) {
+    if (!recipesById) return;
+    for (var id in recipesById) {
+      if (Object.prototype.hasOwnProperty.call(recipesById, id)) cb(recipesById[id]);
+    }
+  }
+  function recipeCount() { return recipesById ? Object.keys(recipesById).length : 0; }
+  function itemCount() { return items ? Object.keys(items).length : 0; }
+
   /**
    * アイテム名検索。日本語・英語・数値ID に対応。
    * @returns {Array<{id:number, ja:string, en:string, craftable:boolean}>}
@@ -275,7 +288,10 @@ var GameData = (function () {
     jobName: jobName,
     isCrystal: isCrystal,
     dataAge: dataAge,
-    search: search
+    search: search,
+    eachRecipe: eachRecipe,
+    recipeCount: recipeCount,
+    itemCount: itemCount
   };
 })();
   FF14.craft.GameData = GameData;

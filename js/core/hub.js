@@ -10,6 +10,8 @@ FF14.core = FF14.core || {};
 FF14.nodes = FF14.nodes || {};
 FF14.assets = FF14.assets || {};
 FF14.craft = FF14.craft || {};
+FF14.reverse = FF14.reverse || {};   // レシピ検索・逆引きタブ
+FF14.watch = FF14.watch || {};       // 市場タブ
 
 FF14.core.Hub = (function () {
   'use strict';

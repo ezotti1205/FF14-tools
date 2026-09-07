@@ -13,7 +13,9 @@
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/tab-nodes.css">
 <link rel="stylesheet" href="css/tab-assets.css">
+<link rel="stylesheet" href="css/tab-recipe.css">
 <link rel="stylesheet" href="css/tab-craft.css">
+<link rel="stylesheet" href="css/tab-watch.css">
 <link rel="stylesheet" href="css/tab-settings.css">
 </head>
 <body>
@@ -23,7 +25,9 @@
   <nav class="hub-tabs" role="tablist" aria-label="ツール">
     <button type="button" role="tab" data-tab="nodes" aria-selected="false">ノード</button>
     <button type="button" role="tab" data-tab="assets" aria-selected="false">総資産</button>
+    <button type="button" role="tab" data-tab="recipe" aria-selected="false">レシピ</button>
     <button type="button" role="tab" data-tab="craft" aria-selected="false">作る vs 買う</button>
+    <button type="button" role="tab" data-tab="watch" aria-selected="false">市場</button>
     <button type="button" role="tab" data-tab="settings" aria-selected="false">設定</button>
   </nav>
   <div class="hub-clocks">
@@ -248,7 +252,111 @@
 </section>
 
 <!-- ========================================================================
-     タブ3: 「作る vs 買う」判定（元 ff14-craft-profit）
+     タブ3: レシピ検索・逆引き（元 FF14素材逆引きツール）
+     ルート要素の class="rcp-root" と data-view="home" がCSSスコープ／
+     ビュー切り替えの前提です。
+     ======================================================================== -->
+<section id="panel-recipe" class="hub-panel rcp-root" data-view="home" hidden>
+
+  <div class="top">
+    <a class="brand" href="#" data-goview="home" title="ホーム">FF14 <span>レシピ検索・逆引き</span></a>
+
+    <div class="search-wrap topsearch">
+      <input id="rcp-q" type="text" autocomplete="off" spellcheck="false" placeholder="読み込み中…">
+      <div id="rcp-suggest" class="suggest" hidden></div>
+    </div>
+
+    <div class="top-right">
+      <label class="chk onsearch" title="どこかのレシピで素材として使われているアイテムだけに絞り込みます">
+        <input type="checkbox" id="rcp-onlyIng" checked> 素材になるものだけ
+      </label>
+      <nav class="pagenav">
+        <a href="#" data-goview="home">ホーム</a>
+        <a href="#" data-goview="browse">条件から探す</a>
+        <a href="#" data-goview="search">検索・逆引き</a>
+      </nav>
+      <button id="rcp-reload" class="btn">DB再取得</button>
+    </div>
+  </div>
+
+  <div id="rcp-banner" class="banner" hidden></div>
+  <div class="statusbar"><span id="rcp-status">…</span></div>
+
+  <!-- ===== ホーム ===== -->
+  <main class="rcp-view" data-view="home">
+    <section class="hero">
+      <h1>FF14 レシピ検索・逆引き</h1>
+      <p class="lead">
+        アイテムの<b>作り方</b>（必要な素材）と<b>使い道</b>（そのアイテムを素材に使うレシピ）を、
+        どちらからでも調べられます。
+      </p>
+      <div class="search-wrap hero-search">
+        <input id="rcp-qhome" type="text" autocomplete="off" spellcheck="false" placeholder="読み込み中…">
+        <div id="rcp-suggesthome" class="suggest" hidden></div>
+      </div>
+      <div class="hero-ex" id="rcp-heroEx"></div>
+    </section>
+
+    <section class="cards">
+      <a class="card" href="#" data-goview="search">
+        <div class="card-t">🔍 アイテムから調べる</div>
+        <div class="card-d">
+          名前で検索して、そのアイテムの<b>作り方</b>と<b>逆引き</b>を表示します。
+          逆引きは職業ごとに折りたためて、中間素材をたどって上位レシピまで展開できます。
+        </div>
+      </a>
+      <a class="card" href="#" data-goview="browse">
+        <div class="card-t">🧭 条件から探す</div>
+        <div class="card-d">
+          クラフター職・製作Lv帯・産出数・素材数などの条件を組み合わせて、
+          レシピ一覧から絞り込みます。
+        </div>
+      </a>
+      <div class="card static">
+        <div class="card-t">📓 パッチ台帳</div>
+        <div class="card-d">
+          各レシピの「いつのデータか」は <code>js/tabs/recipe/patchdata.js</code> で手管理しています。
+          検索ビュー下部のパネルから、貼り付け用のJSONを書き出せます。
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="rcp-recentPanel" hidden>
+      <div class="panel-h"><strong>最近見たアイテム</strong>
+        <button class="btn tiny ghost" id="rcp-clearRecent">履歴を消す</button></div>
+      <div class="recent-list" id="rcp-recentList"></div>
+    </section>
+  </main>
+
+  <!-- ===== 条件から探す ===== -->
+  <main class="rcp-view wide" data-view="browse" hidden>
+    <h1 class="page-h">製作レシピ</h1>
+    <p class="page-lead">
+      下記リンクは「製作クラス指定」と各種条件を組み合わせたショートカットです。
+      条件を選ぶと下に結果が出ます。完成品名をクリックすると、そのアイテムの作り方と逆引きに移動します。
+    </p>
+    <div id="rcp-jobTabs" class="jobtabs"></div>
+    <div id="rcp-chips" class="chipbar" hidden></div>
+    <div id="rcp-cards" class="browse-cards"></div>
+    <div id="rcp-results" class="panel"></div>
+    <p class="note foot" id="rcp-dataNote"></p>
+  </main>
+
+  <!-- ===== 検索・逆引き ===== -->
+  <main class="rcp-view" data-view="search" hidden>
+    <div id="rcp-result" class="result"></div>
+    <section id="rcp-ledger" class="panel ledger"></section>
+  </main>
+
+  <p class="note foot">
+    レシピ・アイテムデータは <a href="https://github.com/ffxiv-teamcraft/ffxiv-teamcraft" target="_blank" rel="noopener">ffxiv-teamcraft</a> の公開JSON（jsDelivr経由）。
+    アイコンは <a href="https://v2.xivapi.com/" target="_blank" rel="noopener">XIVAPI v2</a> からホットリンクで、画像はローカルに保存しません。
+  </p>
+
+</section>
+
+<!-- ========================================================================
+     タブ4: 「作る vs 買う」判定（元 ff14-craft-profit）
      ======================================================================== -->
 <section id="panel-craft" class="hub-panel" hidden>
 
@@ -312,7 +420,111 @@
 </section>
 
 <!-- ========================================================================
-     タブ4: 設定（3本ぶんの設定とデータの出し入れ）
+     タブ5: 市場チェック（元 市場チェック単体版）
+     単体版にあった home.html（ショートカット集）は、ハブのタブが入口になるため
+     持ち込んでいません。#clearBtn は総資産タブと衝突するので #watchClearBtn に改名。
+     ======================================================================== -->
+<section id="panel-watch" class="hub-panel" hidden>
+
+  <!-- 上部固定バー: 検索が主機能なのでここに置く -->
+  <header class="entry-bar">
+    <span class="brand">FF14&nbsp;<b>市場チェック</b></span>
+
+    <div class="search-wrap">
+      <form id="searchForm" class="search-form" autocomplete="off">
+        <input id="searchInput" type="search" role="combobox"
+               aria-expanded="false" aria-controls="suggestList" aria-autocomplete="list"
+               placeholder="アイテム名で検索（日本語 / English）">
+        <button type="submit" class="btn primary">検索</button>
+      </form>
+      <!-- 入力に追従する候補リスト（予測変換） -->
+      <ul id="suggestList" class="suggest" role="listbox" hidden></ul>
+    </div>
+
+    <div class="scope-group">
+      <select id="scopeType" title="ワールド単位かDC全体か">
+        <option value="dc">DC全体</option>
+        <option value="world">ワールド</option>
+      </select>
+      <select id="scopeName" title="対象ワールド / データセンター"><option>読み込み中…</option></select>
+      <select id="lang" title="検索に使う言語">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+        <option value="de">Deutsch</option>
+        <option value="fr">Français</option>
+      </select>
+    </div>
+  </header>
+
+  <main class="watch-wrap">
+    <p id="scopeMsg" class="msg bar-msg"></p>
+
+    <!-- 1. 検索結果（一時的な確認・登録しなくても見られる） -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>検索結果</h2>
+        <span id="searchMsg" class="msg"></span>
+        <div class="head-actions">
+          <button id="watchClearBtn" type="button" class="btn ghost sm" hidden>結果を消す</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div id="searchResults" class="card-list"></div>
+        <p id="searchEmpty" class="empty">アイテム名を入力すると候補が出ます。選ぶか <kbd>Enter</kbd> で価格を確認できます。</p>
+      </div>
+    </section>
+
+    <!-- 2. 登録リスト（常時表示） -->
+    <section class="panel">
+      <div class="panel-head">
+        <h2>登録リスト</h2>
+        <span id="favMsg" class="msg"></span>
+        <div class="head-actions">
+          <label class="chk"><input type="checkbox" id="autoRefresh"> 自動更新</label>
+          <select id="autoInterval" class="sm" title="自動更新の間隔">
+            <option value="300000">5分</option>
+            <option value="600000" selected>10分</option>
+            <option value="1800000">30分</option>
+          </select>
+          <button id="refreshBtn" type="button" class="btn">再取得</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <!-- 登録済みアイテムだけを対象にした絞り込み・並び替え（新規API検索は発生しない） -->
+        <div id="favToolbar" class="fav-toolbar" hidden>
+          <input id="favFilter" type="search" autocomplete="off"
+                 placeholder="登録リストを名前で絞り込み" aria-label="登録リストを名前で絞り込み">
+          <div class="fav-sort">
+            <label for="favSort">並び替え</label>
+            <select id="favSort">
+              <option value="added">登録日時</option>
+              <option value="name">名前</option>
+              <option value="nq">NQ最安値</option>
+              <option value="hq">HQ最安値</option>
+            </select>
+            <button id="favSortDir" type="button" class="btn sm">↑ 昇順</button>
+          </div>
+          <span id="favShown" class="msg" hidden></span>
+        </div>
+
+        <div id="favList" class="card-list"></div>
+        <p id="favNoMatch" class="empty" hidden>絞り込みに一致するアイテムがありません。</p>
+        <p id="favEmpty" class="empty">まだ登録がありません。検索結果の「登録」を押すとここに残ります。</p>
+      </div>
+    </section>
+
+    <footer class="watch-foot">
+      価格は <a href="https://universalis.app" target="_blank" rel="noopener">Universalis</a> のユーザー投稿データです。
+      各カードの「更新」が最終取得時刻で、古い場合は実際の相場と乖離します。
+      アイテム情報は <a href="https://v2.xivapi.com" target="_blank" rel="noopener">XIVAPI</a>。
+      保存はこのブラウザの localStorage のみ（<code>ff14watch.v1.*</code>）。
+    </footer>
+  </main>
+
+</section>
+
+<!-- ========================================================================
+     タブ6: 設定（5本ぶんの設定とデータの出し入れ）
      ======================================================================== -->
 <section id="panel-settings" class="hub-panel" hidden>
 
@@ -406,18 +618,21 @@
 
   <div class="set-card">
     <h2>データの出し入れ<span class="sub">保存先はこのブラウザの localStorage だけです</span></h2>
+    <p class="hint">価格・ワールド一覧・出品可否・アイコンのキャッシュは、取り直せるうえ大きいので書き出しません。</p>
 
     <div class="fld">
       <label>エクスポート</label>
       <div class="backup-main">
         <button type="button" class="primary" id="hubExportAll">全部まとめてエクスポート</button>
-        <span class="hint">ノード・総資産・作る vs 買う の3本ぶんを1つのJSONに</span>
+        <span class="hint">ノード・総資産・レシピ・作る vs 買う・市場 の5本ぶんを1つのJSONに</span>
       </div>
       <div class="row-btns" style="margin-top:8px">
         <span class="lbl">個別に</span>
         <button type="button" id="hubExportNodes">ノード</button>
         <button type="button" id="hubExportAssets">総資産</button>
+        <button type="button" id="hubExportRecipe">レシピ</button>
         <button type="button" id="hubExportCraft">作る vs 買う</button>
+        <button type="button" id="hubExportWatch">市場</button>
       </div>
     </div>
 
@@ -430,14 +645,15 @@
       <p class="hint">まとめてエクスポートしたファイルでも、個別のファイル
         （統合前の ff14-assets / ff14-craft-profit / ff14-gather-timer のもの）でも、
         中身を見て自動で振り分けます。総資産の記録は<b>置き換え</b>になるので、
-        追記したい場合は「総資産」タブ側のインポートを使ってください。</p>
+        追記したい場合は「総資産」タブ側のインポートを使ってください。
+        レシピ・市場は起動時にしかデータを読まないため、取り込んだあと<b>ページを再読み込み</b>すると反映されます。</p>
     </div>
 
     <div class="fld">
       <p class="hint" id="assetsInfo"></p>
       <p class="hint">localStorage のキーは
-        <code>ff14-gather-timer/*</code> ／ <code>ff14assets.v1.*</code> ／ <code>ff14cp.*</code> ／
-        <code>ff14hub.v1.*</code> で、互いに衝突しません。</p>
+        <code>ff14-gather-timer/*</code> ／ <code>ff14assets.v1.*</code> ／ <code>ff14reverse.v1.*</code> ／
+        <code>ff14cp.*</code> ／ <code>ff14watch.v1.*</code> ／ <code>ff14hub.v1.*</code> で、互いに衝突しません。</p>
     </div>
   </div>
 </section>
@@ -483,6 +699,7 @@
 <script src="js/core/tabs.js"></script>
 <script src="js/core/clock.js"></script>
 <script src="js/core/icons.js"></script>
+<script src="js/core/universalis.js"></script>
 <script src="js/core/backup.js"></script>
 
 <!-- タブ1: ノード -->
@@ -496,7 +713,7 @@
 <script src="js/tabs/assets/chart.js"></script>
 <script src="js/tabs/assets/app.js"></script>
 
-<!-- タブ3: 作る vs 買う -->
+<!-- タブ4: 作る vs 買う（レシピDB gamedata.js はレシピタブとも共有します） -->
 <script src="js/tabs/craft/store.js"></script>
 <script src="js/tabs/craft/gamedata.js"></script>
 <script src="js/tabs/craft/universalis.js"></script>
@@ -504,7 +721,25 @@
 <script src="js/tabs/craft/ui.js"></script>
 <script src="js/tabs/craft/main.js"></script>
 
-<!-- タブ4: 設定 -->
+<!-- タブ3: レシピ検索・逆引き（FF14.craft.GameData を使うので craft/gamedata.js の後） -->
+<script src="js/tabs/recipe/patchdata.js"></script>
+<script src="js/tabs/recipe/reverse.js"></script>
+<script src="js/tabs/recipe/shell.js"></script>
+<script src="js/tabs/recipe/view.js"></script>
+<script src="js/tabs/recipe/suggest.js"></script>
+<script src="js/tabs/recipe/home.js"></script>
+<script src="js/tabs/recipe/app.js"></script>
+<script src="js/tabs/recipe/browse.js"></script>
+<script src="js/tabs/recipe/main.js"></script>
+
+<!-- タブ5: 市場チェック -->
+<script src="js/tabs/watch/store.js"></script>
+<script src="js/tabs/watch/universalis.js"></script>
+<script src="js/tabs/watch/marketable.js"></script>
+<script src="js/tabs/watch/xivapi.js"></script>
+<script src="js/tabs/watch/app.js"></script>
+
+<!-- タブ6: 設定 -->
 <script src="js/tabs/settings/settings.js"></script>
 
 <script>
