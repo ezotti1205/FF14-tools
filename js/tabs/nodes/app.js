@@ -183,15 +183,19 @@ FF14.nodes.App = (function () {
         NODES = nodes;
         renderDataInfo(meta, 'localStorage');
         renderList();
-        btn.textContent = '更新しました（' + nodes.length + '件）';
+        /* ラベルを出しっぱなしにすると次に押すときに用途が分からなくなるので戻す */
+        FF14.core.Hub.toast('ノードデータを更新しました（' + nodes.length + '件）');
+        btn.textContent = 'exdreamsから更新';
       } catch (e) {
-        alert('更新に失敗しました: ' + ((e && e.message) || e));
+        /* このボタンは「設定」タブにあるので、ノードタブ側のバナーに出すと見えない。
+           全タブ共通のトーストで知らせる。 */
+        FF14.core.Hub.toast('ノードデータの更新に失敗しました: ' + ((e && e.message) || e), 'warn');
         btn.textContent = 'exdreamsから更新';
       }
       btn.disabled = false;
     })
       .catch(function () {
-        alert('exdreams.net からデータを取得できませんでした（ネットワーク/接続をご確認ください）。');
+        FF14.core.Hub.toast('exdreams.net からノードデータを取得できませんでした（ネットワーク／接続をご確認ください）。', 'warn');
         btn.textContent = 'exdreamsから更新'; btn.disabled = false;
       });
   }

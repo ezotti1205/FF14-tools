@@ -59,13 +59,14 @@
 }
 .rcp-root .pagenav a:hover { color:var(--fg); border-color:var(--line); background:var(--panel); }
 .rcp-root .search-wrap { position:relative; flex:1; min-width:160px; max-width:520px; }
-.rcp-root #q {
+/* 検索欄は上部バー(#rcp-q)とホーム(#rcp-qhome)の2つ。どちらも .search-wrap の中にある */
+.rcp-root .search-wrap input {
   width:100%; padding:6px 10px;
   background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
   outline:none;
 }
-.rcp-root #q:focus { border-color:var(--accent); }
-.rcp-root #q:disabled { opacity:.5; }
+.rcp-root .search-wrap input:focus { border-color:var(--accent); }
+.rcp-root .search-wrap input:disabled { opacity:.5; }
 .rcp-root .top-right { display:flex; gap:8px; align-items:center; margin-left:auto; }
 
 .rcp-root .chk {
@@ -103,7 +104,7 @@
   padding:6px 12px; font-size:11.5px; color:var(--fg-dim);
   background:var(--panel); border-bottom:1px solid var(--line);
 }
-.rcp-root #status { display:flex; gap:16px; flex-wrap:wrap; }
+.rcp-root #rcp-status { display:flex; gap:16px; flex-wrap:wrap; }
 .rcp-root .statusbar b { color:var(--fg); font-weight:600; font-family:var(--mono); }
 
 .rcp-root main { padding:12px; max-width:1080px; margin:0 auto; }
@@ -115,7 +116,7 @@
 .rcp-root .hero .lead { margin:0 auto 18px; max-width:620px; color:var(--fg-dim); font-size:13px; line-height:1.8; }
 .rcp-root .hero .lead b { color:var(--fg); }
 .rcp-root .hero-search { max-width:560px; margin:0 auto; text-align:left; }
-.rcp-root .hero-search #q { padding:11px 14px; font-size:14px; }
+.rcp-root .hero-search input { padding:11px 14px; font-size:14px; }
 .rcp-root .hero-ex { margin-top:12px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; align-items:center; }
 
 .rcp-root .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; margin-bottom:16px; }
@@ -448,6 +449,9 @@
 @media (max-width:620px) {
   .rcp-root .top { flex-wrap:wrap; }
   .rcp-root .search-wrap { order:3; flex:1 1 100%; max-width:none; }
+  /* 検索ビューでは「素材になるものだけ」が加わって .top-right が入りきらないので、
+     この中も折り返す（折り返さないとページ全体が横スクロールになる） */
+  .rcp-root .top-right { flex-wrap:wrap; justify-content:flex-end; row-gap:6px; }
   .rcp-root .hero h1 { font-size:21px; }
   .rcp-root .page-h { font-size:19px; }
   .rcp-root .jobtab { padding:7px 10px; font-size:11.5px; }

@@ -107,7 +107,16 @@
   gap:12px;padding:12px;align-items:start;
 }
 #panel-craft .col-side {position:sticky;top:53px;display:flex;flex-direction:column;gap:10px}
-@media (max-width:900px) { #panel-craft main {grid-template-columns:minmax(0,1fr)} #panel-craft .col-side {order:-1;position:static} }/* ---------- target bar ---------- */
+@media (max-width:900px) { #panel-craft main {grid-template-columns:minmax(0,1fr)} #panel-craft .col-side {order:-1;position:static} }
+
+/* 狭い画面では上部バーを折り返す。折り返さないとワールド選択とボタンが
+   はみ出して、ページ全体が横スクロールしてしまう（レシピ・市場タブと同じ扱い）。 */
+@media (max-width:760px) {
+  #panel-craft .top {flex-wrap:wrap}
+  #panel-craft .search-wrap {order:3;flex:1 1 100%;max-width:none}
+  #panel-craft .top-right {margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+  #panel-craft .ctl {max-width:none;flex:1 1 120px;min-width:0}
+}/* ---------- target bar ---------- */
 
 
 #panel-craft .target-bar {
@@ -123,7 +132,9 @@
 #panel-craft .t-qty {display:flex;align-items:center;gap:5px}
 #panel-craft .t-qty input {width:70px;text-align:right;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--radius);padding:5px 7px}
 #panel-craft .badge {
-  display:inline-block;padding:1px 6px;border-radius:10px;font-size:10.5px;
+  /* nowrap が無いと「クリスタル」が2行に割れて行の高さが跳ねる */
+  display:inline-block;white-space:nowrap;
+  padding:1px 6px;border-radius:10px;font-size:10.5px;
   border:1px solid var(--line);color:var(--fg-dim);background:var(--panel-2);
 }/* ---------- tree ---------- */
 
@@ -190,8 +201,11 @@
 
 #panel-craft .modes {display:flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
 #panel-craft .modes button {
-  flex:1;background:transparent;border:0;border-right:1px solid var(--line);
-  padding:3px 0;font-size:11px;cursor:pointer;color:var(--fg-dim);
+  /* flex:1 は flex-basis:0 なので、nowrap が無いと「買う」が1文字ずつ折り返して
+     幅20px・高さ39pxの縦長ボタンになる（グリッド表示のときに顕著）。 */
+  flex:1;white-space:nowrap;
+  background:transparent;border:0;border-right:1px solid var(--line);
+  padding:3px 6px;font-size:11px;cursor:pointer;color:var(--fg-dim);
 }
 #panel-craft .modes button:last-child {border-right:0}
 #panel-craft .modes button:hover {background:#232c3a;color:var(--fg)}

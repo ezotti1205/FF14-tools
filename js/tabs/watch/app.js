@@ -130,10 +130,21 @@
       });
     }
 
+    /* まだ選んだことがなければ「作る vs 買う」タブのワールドに合わせる。
+       同じアプリで既定のワールドが2つに割れていると分かりにくいため。
+       （キーは別々のままなので、片方だけ変えることはできる） */
     var want = settings.scopeName;
+    if (!want) {
+      try {
+        var cs = FF14.craft.Store.getSettings();
+        if (cs && cs.scopeType === settings.scopeType && cs.scopeName) want = cs.scopeName;
+      } catch (e) { /* craft 側が読めなくても既定値で続行する */ }
+    }
+
     var has = Array.prototype.some.call(sel.options, function (o) { return o.value === want; });
     if (has) {
       sel.value = want;
+      if (settings.scopeName !== want) { settings.scopeName = want; saveSettings(); }
     } else {
       settings.scopeName = sel.options.length ? sel.options[0].value : '';
       saveSettings();

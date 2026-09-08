@@ -92,6 +92,29 @@ body {
 /* レシピタブは shell.js が --rcp-bar-top / --rcp-sticky-top を実測して流し込むので、
    ここでの上書きは不要です。 */
 
+/* ---------- 共通トースト（FF14.core.Hub.toast） ----------
+   #hubToast はどのタブからも使える1つだけの要素なので、外枠と一緒にここで持ちます。 */
+.hub-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(12px);
+  z-index: 200;
+  max-width: min(90vw, 560px);
+  text-align: center;
+  background: #1b212b;
+  color: #d6dae0;
+  border: 1px solid #262d38;
+  border-radius: 6px;
+  padding: 9px 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s, transform .15s;
+}
+.hub-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.hub-toast.warn { border-color: #5a4a26; color: #e8d5a8; }
+
 /* ---------- アイテムアイコン（js/core/icons.js） ----------
    取得の成否にかかわらず同じ大きさの箱を先に置くので、
    画像が来ても来なくてもレイアウトは動きません。 */

@@ -12,16 +12,9 @@ FF14.settings.Panel = (function () {
   var $ = function (s) { return document.querySelector(s); };
   var booted = false;
   var scopeFilled = false;
-  var toastTimer = null;
 
-  function toast(msg, kind) {
-    var t = $('#hubToast');
-    if (!t) return;
-    t.textContent = msg;
-    t.className = 'hub-toast show' + (kind ? ' ' + kind : '');
-    if (toastTimer) clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.className = 'hub-toast'; }, 3000);
-  }
+  /* 実体は FF14.core.Hub.toast（他のタブからも使うので共通側へ出してある） */
+  function toast(msg, kind) { FF14.core.Hub.toast(msg, kind); }
 
   /* ---------- 通知 ---------- */
   function bindNotify() {

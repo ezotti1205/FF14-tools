@@ -89,6 +89,8 @@ vendor/                   （任意）Chart.js をオフラインで使う場合
   に Store を渡して各タブぶんのクライアントを作ります。**価格キャッシュの保存先はタブごとに別**
   （craft は `ff14cp.*` / watch は `ff14watch.v1.prices`）なので、キー体系は単体版のままです。
   1リクエストは20件・504時は2回まで取り直し（40件以上だと必ず504になるため）。
+  ワールド/DCの選択も別々に持てますが、**市場タブをまだ一度も設定していないときは
+  「作る vs 買う」のワールドを引き継ぎます**（同じアプリで既定が2つに割れないように）。
 - **アイコン** … 市場タブは XIVAPI の検索応答にアイコンのパスが入っているので、
   `Icons.prime(id, path)` でキャッシュへ流し込んでから `Icons.element(id, name, size)` で
   描画します。同じパスを取り直さずに済みます。
@@ -105,7 +107,7 @@ vendor/                   （任意）Chart.js をオフラインで使う場合
 名前空間ひとつだけにぶら下げる形にしました。
 
 ```
-FF14.core    … Hub / Tabs / Clock / Icons / createUniversalis / Backup（共通）
+FF14.core    … Hub（設定・通知・トースト）/ Tabs / Clock / Icons / createUniversalis / Backup
 FF14.nodes   … App
 FF14.assets  … U / Store / Agg / ChartView / App
 FF14.craft   … Store / GameData / Universalis / Calc / UI / api
@@ -168,6 +170,19 @@ FF14.watch   … Store / Universalis / Marketable / XIVAPI
   OFFの間は、ブラウザの許可があっても送信しません。
 - ノードごとの通知は「ノード」タブの各行の「通知」チェックで選び、
   何分前に知らせるかは設定タブで指定します。
+
+## 画面下のメッセージ（トースト）
+
+「保存しました」「更新に失敗しました」のような短い知らせは、画面下中央のトーストに出します。
+
+```js
+FF14.core.Hub.toast('レシピDBを更新しました');
+FF14.core.Hub.toast('取得できませんでした', 'warn');   // warn は長め（5秒）に出る
+```
+
+`#hubToast` は**全タブ共通の1要素**です（外枠と一緒に `css/base.css` が持っています）。
+タブを切り替えても消えないので、設定タブで押したボタンの結果もそのまま読めます。
+`window.alert()` は使いません（操作を止めてしまううえ、他のタブの見た目と揃わないため）。
 
 ## アイテムアイコン
 

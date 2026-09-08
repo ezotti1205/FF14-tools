@@ -80,9 +80,23 @@ FF14.core.Hub = (function () {
     }
   }
 
+  /* ---------- トースト ----------
+     #hubToast は全タブ共通の1要素。どのタブが出しても画面下に同じ形で出ます
+     （タブを切り替えても消えないので、設定タブの操作結果もそのまま読めます）。 */
+  var toastTimer = null;
+  function toast(msg, kind) {
+    var t = document.getElementById('hubToast');
+    if (!t) return;
+    t.textContent = msg;
+    t.className = 'hub-toast show' + (kind ? ' ' + kind : '');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.className = 'hub-toast'; }, kind === 'warn' ? 5000 : 3000);
+  }
+
   return {
     KEY: KEY,
     get: get, set: set, onChange: onChange,
+    toast: toast,
     notifySupported: supported, notifyPermission: permission,
     requestNotifyPermission: requestPermission, notify: notify
   };
